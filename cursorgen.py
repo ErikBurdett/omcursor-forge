@@ -34,7 +34,8 @@ from pathlib import Path
 
 THEME_NAME = "CursorForge"
 BASE = 24                # art is drawn on a 24x24 grid
-SCALES = (1, 2, 3)       # emit nominal sizes 24, 48, 72
+SCALES = (1, 2, 3, 4)    # emit nominal sizes 24, 48, 72, 96 (96 for HiDPI:
+                         # Hyprland requests size x ceil(scale) from libXcursor)
 VALID_SIZES = tuple(BASE * s for s in SCALES)
 STYLES = ("classic", "skeleton", "lich", "sword", "wand", "image")
 ART_STYLES = ("classic", "skeleton", "lich", "sword", "wand")
@@ -1110,11 +1111,16 @@ def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
     images = []
     for factor in SCALES:
         nominal = BASE * factor
-        if hires and nominal == HIRES:
+        # The hires art serves its own nominal and integer multiples of it.
+        if hires and nominal % HIRES == 0:
+            hi_factor = nominal // HIRES
             hi_frames, hi_xhot, hi_yhot = hires
             for grid, delay in hi_frames:
-                images.append((nominal, HIRES, HIRES, hi_xhot, hi_yhot,
-                               paced(delay), render_grid(grid, roles, HIRES)))
+                images.append((nominal, nominal, nominal,
+                               hi_xhot * hi_factor, hi_yhot * hi_factor,
+                               paced(delay),
+                               scale_pixels(render_grid(grid, roles, HIRES),
+                                            HIRES, HIRES, hi_factor)))
             continue
         for grid, delay in frames:
             images.append((nominal, nominal, nominal,

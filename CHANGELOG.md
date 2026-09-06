@@ -4,6 +4,28 @@ All notable changes to Cursor Forge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] - 2026-09-06
+
+### Added
+
+- **Mode presets**: `setMode static|glints|full` over IPC (and reported in
+  `status`) — *static* is a completely animation-free theme that just
+  applies the style, *glints* keeps in-place sparkles without sprite
+  movement, *full* is everything. The panel's Animated/Motion toggles map
+  onto the same switches.
+- **96 px HiDPI nominal**: themes now also ship 96 px images (an exact 2x
+  of the native 48 px art for the hand styles), so scaled monitors get
+  crisp cursors, and 96 is available as a size for accessibility.
+
+### Fixed
+
+- QA pass for marketplace readiness: a Restore pressed while the generator
+  was busy is now queued instead of silently ignored, and a newer apply
+  correctly supersedes a queued reset. Stress-tested click floods and
+  rapid recolors leak-free. SECURITY.md now documents exactly what the
+  optional click-ripple bind can and cannot observe, plus notes for
+  marketplace reviewers.
+
 ## [1.6.0] - 2026-09-06
 
 ### Added

@@ -87,6 +87,7 @@ can be restored.
   omarchy-shell io.github.erikburdett.cursorforge matchTheme
   omarchy-shell io.github.erikburdett.cursorforge cycle
   omarchy-shell io.github.erikburdett.cursorforge toggleLeftHanded
+  omarchy-shell io.github.erikburdett.cursorforge setMode static   # or glints|full
   omarchy-shell io.github.erikburdett.cursorforge toggleAnimation
   omarchy-shell io.github.erikburdett.cursorforge toggleMotion
   omarchy-shell io.github.erikburdett.cursorforge setSpeed lively
@@ -125,10 +126,12 @@ Nothing is downloaded or installed by the plugin at any point.
 
 ## Removal
 
-Restore your previous cursor first, then remove the plugin:
+Restore your previous cursor and remove the optional click-ripple bind (if
+you installed it), then remove the plugin:
 
 ```bash
 omarchy-shell io.github.erikburdett.cursorforge reset
+~/.config/omarchy/plugins/io.github.erikburdett.cursorforge/uninstall-click-ripple
 omarchy plugin remove io.github.erikburdett.cursorforge
 ```
 

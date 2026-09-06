@@ -12,7 +12,7 @@ Item {
   property var manifest: null
   readonly property string pluginId: "io.github.erikburdett.cursorforge"
   readonly property var styles: ["classic", "skeleton", "lich", "sword", "wand", "image"]
-  readonly property var sizes: [24, 48, 72]
+  readonly property var sizes: [24, 48, 72, 96]
 
   // Mirrors ~/.config/cursorforge/settings.json. `active` means the user has
   // applied Cursor Forge at least once and wants it restored at login;
@@ -186,6 +186,8 @@ Item {
   // switch or a fast series of clicks runs the generator once.
   function requestApply() {
     active = true
+    // A newer apply supersedes any reset still waiting on the generator.
+    pendingReset = false
     applyTimer.restart()
   }
 
@@ -214,12 +216,44 @@ Item {
     generator.exec(argv)
   }
 
+  property bool pendingReset: false
+
   function runReset() {
-    if (generator.running) return
+    if (generator.running) {
+      // Queue behind the in-flight run so Restore never silently no-ops.
+      pendingReset = true
+      pendingApply = false
+      return
+    }
     active = false
+    pendingApply = false
+    applyTimer.stop()
     lastError = ""
     generator.exec([pythonPath, "-I", generatorPath, "reset"])
   }
+
+  // Convenience presets over the animation switches:
+  //   static — single-frame theme, no animation at all
+  //   glints — in-place sparkles only, no sprite movement
+  //   full   — sprite motion and glints
+  function setMode(name) {
+    if (name === "static") {
+      animated = false
+    } else if (name === "glints") {
+      animated = true
+      motion = false
+    } else if (name === "full") {
+      animated = true
+      motion = true
+    } else {
+      return false
+    }
+    requestApply()
+    return true
+  }
+
+  readonly property string mode: !animated ? "static"
+    : (motion ? "full" : "glints")
 
   function handleResult(text) {
     var report = null
@@ -335,7 +369,11 @@ Item {
       } else {
         root.handleResult(generatorOut.text)
       }
-      if (root.pendingApply) {
+      if (root.pendingReset) {
+        root.pendingReset = false
+        root.pendingApply = false
+        root.runReset()
+      } else if (root.pendingApply) {
         root.pendingApply = false
         root.runGenerator(root.active)
       }
@@ -357,6 +395,7 @@ Item {
         leftHanded: root.leftHanded,
         animated: root.animated,
         motion: root.motion,
+        mode: root.mode,
         speed: root.speed,
         rippleShape: root.rippleShape,
         clickRipple: root.clickRipple,
@@ -408,6 +447,10 @@ Item {
     function toggleMotion(): string {
       root.setMotion(!root.motion)
       return root.motion ? "moving" : "still"
+    }
+
+    function setMode(name: string): string {
+      return root.setMode(name) ? "ok" : "expected static|glints|full"
     }
 
     function setSpeed(name: string): string {

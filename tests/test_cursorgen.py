@@ -166,6 +166,21 @@ def test_hand_48_grids_are_well_formed():
     assert 1 <= diff <= 8
 
 
+def test_hidpi_96_nominal_scales_the_hires_art(tmp_path):
+    theme = build(tmp_path, "skeleton")
+    images = parse_xcursor((theme / "cursors" / "default").read_bytes())
+    img48 = next(i for i in images if i["nominal"] == 48)
+    img96 = next(i for i in images if i["nominal"] == 96)
+    assert (img96["xhot"], img96["yhot"]) == (36, 0)
+    upscaled = bytearray()
+    for y in range(96):
+        for x in range(96):
+            src = ((y // 2) * 48 + (x // 2)) * 4
+            upscaled += img48["pixels"][src:src + 4]
+    assert bytes(upscaled) == img96["pixels"], \
+        "96px should be an exact 2x of the native 48px art"
+
+
 def test_skeleton_48_nominal_has_native_art(tmp_path):
     theme = build(tmp_path, "skeleton")
     images = parse_xcursor((theme / "cursors" / "default").read_bytes())
@@ -320,13 +335,17 @@ def test_settings_roundtrip_whitelists_keys(tmp_path, monkeypatch):
     cursorgen.save_settings({
         "style": "skeleton", "colorMode": "theme", "customColor": "#123456",
         "size": 24, "imagePath": "", "imageHotspot": "0,0",
-        "leftHanded": False, "animated": True, "active": True,
+        "leftHanded": False, "animated": True, "motion": False,
+        "speed": "lively", "rippleShape": "burst", "clickRipple": True,
+        "active": True,
         "restore": {"theme": "Adwaita", "size": 24},
         "junk": "dropped",
     })
     loaded = cursorgen.load_settings()
     assert loaded["style"] == "skeleton"
     assert loaded["active"] is True and loaded["animated"] is True
+    assert loaded["motion"] is False and loaded["speed"] == "lively"
+    assert loaded["rippleShape"] == "burst"
     assert "junk" not in loaded
     raw = json.loads(cursorgen.config_path().read_text())
     assert raw == loaded

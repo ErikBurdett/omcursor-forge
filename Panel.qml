@@ -320,7 +320,7 @@ Panel {
           spacing: Style.space(6)
 
           Repeater {
-            model: [24, 48, 72]
+            model: [24, 48, 72, 96]
 
             delegate: Button {
               required property int modelData
