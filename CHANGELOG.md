@@ -4,6 +4,22 @@ All notable changes to Cursor Forge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-09-06
+
+### Added
+
+- **Sprite motion — the cursor itself moves.** The skeleton and lich hands
+  periodically retract the pointing finger and tap back down at the
+  hotspot (with a ring flash on the strike); on links the charged hand
+  taps eagerly at double rate; the sword and wand bob as if floating. The
+  hotspot never moves — clicks always land where the extended tip points.
+- **Customization controls** in the panel, the settings file, and IPC:
+  *Motion* toggle (sprite movement on/off, independent of the in-place
+  glints), *Speed* (calm / normal / lively — scales every animation
+  delay), and *Ripple shape* (diamond / circle / burst). New settings
+  keys: `motion`, `speed`, `rippleShape`; new IPC: `toggleMotion`,
+  `setSpeed`, `setRippleShape`.
+
 ## [1.5.0] - 2026-09-06
 
 ### Fixed

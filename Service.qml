@@ -26,8 +26,13 @@ Item {
   property int cursorSize: 24
   property bool leftHanded: false
   property bool animated: true
+  property bool motion: true
+  property string speed: "normal"
+  property string rippleShape: "diamond"
   property bool clickRipple: true
   property bool active: false
+  readonly property var speeds: ["calm", "normal", "lively"]
+  readonly property var rippleShapes: ["diamond", "circle", "burst"]
 
   readonly property bool busy: generator.running
   property bool pendingApply: false
@@ -142,6 +147,26 @@ Item {
     return true
   }
 
+  function setMotion(enabled) {
+    motion = enabled === true
+    requestApply()
+    return true
+  }
+
+  function setSpeed(next) {
+    if (speeds.indexOf(next) < 0) return false
+    speed = next
+    requestApply()
+    return true
+  }
+
+  function setRippleShape(next) {
+    if (rippleShapes.indexOf(next) < 0) return false
+    rippleShape = next
+    requestApply()
+    return true
+  }
+
   // Fired by the (optional) non-consuming mouse bind on every left click;
   // resolves the pointer position and hands it to the ripple overlay.
   function triggerRipple() {
@@ -182,6 +207,8 @@ Item {
       "--image-hotspot", imageHotspot)
     if (leftHanded) argv.push("--left-handed")
     if (!animated) argv.push("--no-animation")
+    if (!motion) argv.push("--no-motion")
+    argv.push("--speed", speed, "--ripple-shape", rippleShape)
     if (!clickRipple) argv.push("--no-click-ripple")
     if (!fullApply) argv.push("--no-apply", "--no-save")
     generator.exec(argv)
@@ -227,12 +254,19 @@ Item {
       ? Number(parsed.size) : cursorSize
     var nextLeftHanded = parsed.leftHanded === true
     var nextAnimated = parsed.animated !== false
+    var nextMotion = parsed.motion !== false
+    var nextSpeed = speeds.indexOf(String(parsed.speed)) >= 0
+      ? String(parsed.speed) : speed
+    var nextRippleShape = rippleShapes.indexOf(String(parsed.rippleShape)) >= 0
+      ? String(parsed.rippleShape) : rippleShape
     var nextClickRipple = parsed.clickRipple !== false
     var nextActive = parsed.active === true
     var changed = nextStyle !== style || nextMode !== colorMode
       || nextColor !== customColor || nextImage !== imagePath
       || nextHotspot !== imageHotspot || nextSize !== cursorSize
       || nextLeftHanded !== leftHanded || nextAnimated !== animated
+      || nextMotion !== motion || nextSpeed !== speed
+      || nextRippleShape !== rippleShape
       || nextClickRipple !== clickRipple || nextActive !== active
 
     style = nextStyle
@@ -243,6 +277,9 @@ Item {
     cursorSize = nextSize
     leftHanded = nextLeftHanded
     animated = nextAnimated
+    motion = nextMotion
+    speed = nextSpeed
+    rippleShape = nextRippleShape
     clickRipple = nextClickRipple
     active = nextActive
 
@@ -319,6 +356,9 @@ Item {
         size: root.cursorSize,
         leftHanded: root.leftHanded,
         animated: root.animated,
+        motion: root.motion,
+        speed: root.speed,
+        rippleShape: root.rippleShape,
         clickRipple: root.clickRipple,
         active: root.active,
         busy: root.busy,
@@ -363,6 +403,19 @@ Item {
     function toggleClickRipple(): string {
       root.setClickRipple(!root.clickRipple)
       return root.clickRipple ? "on" : "off"
+    }
+
+    function toggleMotion(): string {
+      root.setMotion(!root.motion)
+      return root.motion ? "moving" : "still"
+    }
+
+    function setSpeed(name: string): string {
+      return root.setSpeed(name) ? "ok" : "expected calm|normal|lively"
+    }
+
+    function setRippleShape(name: string): string {
+      return root.setRippleShape(name) ? "ok" : "expected diamond|circle|burst"
     }
   }
 }

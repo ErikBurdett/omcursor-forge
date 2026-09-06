@@ -636,6 +636,37 @@ def mirror_grid(grid):
     return [row[::-1] for row in grid]
 
 
+def shift_grid(grid, dx, dy):
+    """Translate a grid inside its canvas, filling with transparency."""
+    size = len(grid)
+    blank = "." * size
+    rows = [blank] * dy + list(grid[:size - dy]) if dy >= 0 \
+        else list(grid[-dy:]) + [blank] * -dy
+    out = []
+    for row in rows:
+        if dx >= 0:
+            out.append(("." * dx + row)[:size])
+        else:
+            out.append((row[-dx:] + "." * -dx)[:size])
+    return out
+
+
+def bend_finger(hand, lift):
+    """Retract the pointing finger's distal phalanx by `lift` rows.
+
+    The hand's tip row is base[0], the distal phalanx base[1:4], the first
+    joint base[4]. Bending compresses the distal segment downward while the
+    rest of the hand stays planted, so the return frame reads as a tap that
+    strikes exactly at the hotspot.
+    """
+    blank = "." * len(hand[0])
+    if lift <= 0:
+        return list(hand)
+    if lift == 1:
+        return [blank, hand[0], hand[1], hand[3]] + list(hand[4:])
+    return [blank, blank, hand[0], hand[3]] + list(hand[4:])
+
+
 def transpose_grid(grid):
     return ["".join(grid[x][y] for x in range(len(grid))) for y in range(len(grid))]
 
@@ -696,6 +727,61 @@ WAIT_FRAMES = [(HOURGLASS_FULL, 350), (HOURGLASS_HALF, 350),
                (HOURGLASS_DRAINED, 550)]
 PROGRESS_FRAMES = [(PROGRESS_ARROW, 500), (PROGRESS_ARROW_DRAINED, 500)]
 
+# ---------------------------------------------------------------------------
+# Sprite motion: the cursor art itself moves. The hands periodically tap
+# (finger retracts, then strikes back at the hotspot with a ring flash);
+# sword and wand bob as if floating. Disabled by --no-motion, which falls
+# back to the in-place glint sequences.
+# ---------------------------------------------------------------------------
+
+HAND_SKELETON_HALF_TAP = bend_finger(HAND_SKELETON, 1)
+HAND_SKELETON_TAP = bend_finger(HAND_SKELETON_GLINT, 2)
+SKELETON_MOTION_FRAMES = [(HAND_SKELETON, 1000), (HAND_SKELETON_HALF_TAP, 90),
+                          (HAND_SKELETON_TAP, 170),
+                          (HAND_SKELETON_HALF_TAP, 90),
+                          (HAND_SKELETON_GLINT, 150)]
+SKELETON_MOTION_48 = [(make_hand_48(HAND_SKELETON), 1000),
+                      (make_hand_48(HAND_SKELETON_HALF_TAP), 90),
+                      (make_hand_48(HAND_SKELETON_TAP, True), 170),
+                      (make_hand_48(HAND_SKELETON_HALF_TAP), 90),
+                      (make_hand_48(HAND_SKELETON, True), 150)]
+
+HAND_LICH_HALF_TAP = bend_finger(HAND_LICH, 1)
+HAND_LICH_TAP = bend_finger(HAND_LICH_GLINT, 2)
+LICH_MOTION_FRAMES = [(HAND_LICH, 1000), (HAND_LICH_HALF_TAP, 90),
+                      (HAND_LICH_TAP, 170), (HAND_LICH_HALF_TAP, 90),
+                      (HAND_LICH_GLINT, 150)]
+LICH_MOTION_48 = [(make_hand_48(HAND_LICH), 1000),
+                  (make_hand_48(HAND_LICH_HALF_TAP), 90),
+                  (make_hand_48(HAND_LICH_TAP, True), 170),
+                  (make_hand_48(HAND_LICH_HALF_TAP), 90),
+                  (make_hand_48(HAND_LICH, True), 150)]
+
+# Hover: rapid eager tapping with the charged fingertip.
+SKELETON_POINT_MOTION = [(HAND_SKELETON_POINT_A, 260),
+                         (bend_finger(HAND_SKELETON_POINT_A, 1), 130),
+                         (HAND_SKELETON_GLINT, 260),
+                         (bend_finger(HAND_SKELETON_POINT_A, 1), 130)]
+SKELETON_POINT_MOTION_48 = [(make_hand_48(HAND_SKELETON_POINT_A), 260),
+                            (make_hand_48(bend_finger(HAND_SKELETON_POINT_A, 1)), 130),
+                            (make_hand_48(HAND_SKELETON, True), 260),
+                            (make_hand_48(bend_finger(HAND_SKELETON_POINT_A, 1)), 130)]
+LICH_POINT_MOTION = [(HAND_LICH_POINT_A, 260),
+                     (bend_finger(HAND_LICH_POINT_A, 1), 130),
+                     (HAND_LICH_GLINT, 260),
+                     (bend_finger(HAND_LICH_POINT_A, 1), 130)]
+LICH_POINT_MOTION_48 = [(make_hand_48(HAND_LICH_POINT_A), 260),
+                        (make_hand_48(bend_finger(HAND_LICH_POINT_A, 1)), 130),
+                        (make_hand_48(HAND_LICH, True), 260),
+                        (make_hand_48(bend_finger(HAND_LICH_POINT_A, 1)), 130)]
+
+SWORD_BOB = shift_grid(SWORD, 1, 1)
+SWORD_MOTION_FRAMES = [(SWORD, 1000), (SWORD_BOB, 200), (SWORD_GLINT, 150),
+                       (SWORD_BOB, 200)]
+WAND_BOB = shift_grid(WAND, 0, 1)
+WAND_MOTION_FRAMES = [(WAND, 550), (WAND_BOB, 300), (WAND_GLINT, 300),
+                      (WAND_BOB, 300)]
+
 
 def static(grid, xhot, yhot):
     return {"frames": [(grid, 0)], "hotspot": (xhot, yhot)}
@@ -706,18 +792,29 @@ def static(grid, xhot, yhot):
 SHAPES = {
     "default": {"classic": static(ARROW, 1, 1),
                 "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0),
-                             "hires": SKELETON_HIRES},
+                             "motion": SKELETON_MOTION_FRAMES,
+                             "hires": dict(SKELETON_HIRES,
+                                           motion=SKELETON_MOTION_48)},
                 "lich": {"frames": LICH_HAND_FRAMES, "hotspot": (9, 0),
-                         "hires": LICH_HIRES},
-                "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
-                "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
+                         "motion": LICH_MOTION_FRAMES,
+                         "hires": dict(LICH_HIRES, motion=LICH_MOTION_48)},
+                "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1),
+                          "motion": SWORD_MOTION_FRAMES},
+                "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4),
+                         "motion": WAND_MOTION_FRAMES}},
     "pointer": {"classic": static(HAND_CLASSIC, 8, 0),
                 "skeleton": {"frames": SKELETON_POINT_FRAMES, "hotspot": (9, 0),
-                             "hires": SKELETON_POINT_HIRES},
+                             "motion": SKELETON_POINT_MOTION,
+                             "hires": dict(SKELETON_POINT_HIRES,
+                                           motion=SKELETON_POINT_MOTION_48)},
                 "lich": {"frames": LICH_POINT_FRAMES, "hotspot": (9, 0),
-                         "hires": LICH_POINT_HIRES},
-                "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
-                "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
+                         "motion": LICH_POINT_MOTION,
+                         "hires": dict(LICH_POINT_HIRES,
+                                       motion=LICH_POINT_MOTION_48)},
+                "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1),
+                          "motion": SWORD_MOTION_FRAMES},
+                "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4),
+                         "motion": WAND_MOTION_FRAMES}},
     "text": {"classic": static(TEXT_BEAM, 8, 12)},
     "wait": {"classic": {"frames": WAIT_FRAMES, "hotspot": (10, 10)}},
     "progress": {"classic": {"frames": PROGRESS_FRAMES, "hotspot": (1, 1)}},
@@ -963,7 +1060,11 @@ def palette_style_for(style):
     return "skeleton" if style in ("skeleton", "lich") else "classic"
 
 
-def resolve_frames(frames, xhot, yhot, size, mirrored, animated):
+def resolve_frames(spec, size, mirrored, animated, motion):
+    frames = spec.get("motion") if motion and animated else None
+    if not frames:
+        frames = spec["frames"]
+    xhot, yhot = spec["hotspot"]
     if not animated:
         frames = [(frames[0][0], 0)]
     if mirrored:
@@ -972,15 +1073,15 @@ def resolve_frames(frames, xhot, yhot, size, mirrored, animated):
     return frames, xhot, yhot
 
 
-def shape_spec(shape, grid_style, left_handed, animated=True):
+def shape_spec(shape, grid_style, left_handed, animated=True, motion=True):
     variants = SHAPES[shape]
     spec = variants.get(grid_style) or variants["classic"]
     mirrored = left_handed and shape in HANDED_SHAPES
-    return resolve_frames(spec["frames"], *spec["hotspot"], BASE,
-                          mirrored, animated)
+    return resolve_frames(spec, BASE, mirrored, animated, motion)
 
 
-def shape_hires_spec(shape, grid_style, left_handed, animated=True):
+def shape_hires_spec(shape, grid_style, left_handed, animated=True,
+                     motion=True):
     """Native art for the HIRES nominal, or None to upscale the base grid."""
     variants = SHAPES[shape]
     spec = variants.get(grid_style) or variants["classic"]
@@ -988,32 +1089,36 @@ def shape_hires_spec(shape, grid_style, left_handed, animated=True):
     if not hires:
         return None
     mirrored = left_handed and shape in HANDED_SHAPES
-    return resolve_frames(hires["frames"], *hires["hotspot"], HIRES,
-                          mirrored, animated)
+    return resolve_frames(hires, HIRES, mirrored, animated, motion)
 
 
 def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
-                 animated=True):
+                 animated=True, motion=True, speed=1.0):
     """Resolve one shape to [(nominal, w, h, xhot, yhot, delay, pixels)]."""
     grid_style = grid_style_for(style)
     if style == "image" and shape in ("default", "pointer"):
         hx, hy = image_hotspot
         return [(BASE * f, BASE * f, BASE * f, hx * f, hy * f, 0,
                  load_image_pixels(image_path, BASE * f)) for f in SCALES]
-    frames, xhot, yhot = shape_spec(shape, grid_style, left_handed, animated)
-    hires = shape_hires_spec(shape, grid_style, left_handed, animated)
+    frames, xhot, yhot = shape_spec(shape, grid_style, left_handed, animated,
+                                    motion)
+    hires = shape_hires_spec(shape, grid_style, left_handed, animated, motion)
+
+    def paced(delay):
+        return max(30, int(round(delay * speed))) if delay > 0 else 0
+
     images = []
     for factor in SCALES:
         nominal = BASE * factor
         if hires and nominal == HIRES:
             hi_frames, hi_xhot, hi_yhot = hires
             for grid, delay in hi_frames:
-                images.append((nominal, HIRES, HIRES, hi_xhot, hi_yhot, delay,
-                               render_grid(grid, roles, HIRES)))
+                images.append((nominal, HIRES, HIRES, hi_xhot, hi_yhot,
+                               paced(delay), render_grid(grid, roles, HIRES)))
             continue
         for grid, delay in frames:
             images.append((nominal, nominal, nominal,
-                           xhot * factor, yhot * factor, delay,
+                           xhot * factor, yhot * factor, paced(delay),
                            scale_pixels(render_grid(grid, roles),
                                         BASE, BASE, factor)))
     return images
@@ -1085,7 +1190,8 @@ def build_hyprcursor(theme_dir, shapes_images, animated=True):
 
 
 def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
-                image_hotspot=(0, 0), animated=True):
+                image_hotspot=(0, 0), animated=True, motion=True, speed=1.0,
+                ripple_shape="diamond"):
     """Write the full cursor theme + previews. Returns (dir, warnings)."""
     theme_dir = Path(out_dir) / THEME_NAME
     cursors_dir = theme_dir / "cursors"
@@ -1099,7 +1205,8 @@ def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
     shapes_images = {}
     for shape in SHAPES:
         images = shape_images(shape, style, roles, left_handed,
-                              image_path, image_hotspot, animated)
+                              image_path, image_hotspot, animated, motion,
+                              speed)
         shapes_images[shape] = images
         data = xcursor_bytes(images)
         for name in ALIASES[shape]:
@@ -1126,14 +1233,17 @@ def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
     current = shapes_images["default"][0][6]
     atomic_write(previews / "current.png", png_bytes(current, BASE, BASE))
     atomic_write(previews / "shapes.png", shape_gallery_png(shapes_images))
-    for index, frame in enumerate(ripple_frames(rgb)):
+    for index, frame in enumerate(ripple_frames(rgb, ripple_shape)):
         atomic_write(previews / f"ripple_{index}.png",
                      png_bytes(frame, HIRES, HIRES))
     return theme_dir, warnings
 
 
-def ripple_frames(rgb, count=4):
-    """Expanding pixel-art diamond rings for the click-ripple overlay."""
+RIPPLE_SHAPES = ("diamond", "circle", "burst")
+
+
+def ripple_frames(rgb, shape="diamond", count=4):
+    """Expanding pixel-art rings for the click-ripple overlay."""
     accent = (*rgb, 255)
     soft = (*darken(rgb, 0.35), 255)
     core = (255, 255, 248, 255)
@@ -1145,10 +1255,20 @@ def ripple_frames(rgb, count=4):
         frame = [(0, 0, 0, 0)] * (HIRES * HIRES)
         for y in range(HIRES):
             for x in range(HIRES):
-                distance = abs(x - center) + abs(y - center)
+                dx, dy = x - center, y - center
+                if shape == "circle":
+                    distance = (dx * dx + dy * dy) ** 0.5
+                elif shape == "burst":
+                    # eight radial rays instead of a closed ring
+                    distance = max(abs(dx), abs(dy))
+                    on_ray = abs(dx) < 1.3 or abs(dy) < 1.3 \
+                        or abs(abs(dx) - abs(dy)) < 1.3
+                    if not on_ray:
+                        continue
+                else:
+                    distance = abs(dx) + abs(dy)
                 if abs(distance - radius) <= thickness:
-                    sparse = index >= 2 and (x + y) % 2 == 0
-                    if sparse:
+                    if index >= 2 and (x + y) % 2 == 0:
                         continue
                     frame[y * HIRES + x] = soft if index >= 2 else accent
         if index == 0:
@@ -1244,8 +1364,8 @@ def load_settings():
 
 def save_settings(settings):
     allowed = ("style", "colorMode", "customColor", "size", "imagePath",
-               "imageHotspot", "leftHanded", "animated", "clickRipple",
-               "active", "restore")
+               "imageHotspot", "leftHanded", "animated", "motion", "speed",
+               "rippleShape", "clickRipple", "active", "restore")
     clean = {key: settings[key] for key in allowed if key in settings}
     atomic_write(config_path(),
                  (json.dumps(clean, indent=2) + "\n").encode())
@@ -1255,6 +1375,9 @@ def save_settings(settings):
 # Commands
 # ---------------------------------------------------------------------------
 
+SPEEDS = {"calm": 1.7, "normal": 1.0, "lively": 0.6}
+
+
 def cmd_apply(args):
     rgb = parse_color(args.color)
     image_hotspot = parse_hotspot(args.image_hotspot)
@@ -1263,7 +1386,8 @@ def cmd_apply(args):
     theme_dir, warnings = build_theme(
         args.out or data_home() / "icons", args.style, rgb, args.image,
         left_handed=args.left_handed, image_hotspot=image_hotspot,
-        animated=not args.no_animation)
+        animated=not args.no_animation, motion=not args.no_motion,
+        speed=SPEEDS[args.speed], ripple_shape=args.ripple_shape)
 
     settings = load_settings()
     if not args.no_apply:
@@ -1284,6 +1408,9 @@ def cmd_apply(args):
             "imageHotspot": args.image_hotspot,
             "leftHanded": bool(args.left_handed),
             "animated": not args.no_animation,
+            "motion": not args.no_motion,
+            "speed": args.speed,
+            "rippleShape": args.ripple_shape,
             "clickRipple": not args.no_click_ripple,
             "active": not args.no_apply,
         })
@@ -1357,6 +1484,12 @@ def main(argv=None):
                          help="mirror the hand and arrow shapes")
     apply_p.add_argument("--no-animation", action="store_true",
                          help="build every shape as a single static frame")
+    apply_p.add_argument("--no-motion", action="store_true",
+                         help="keep animation but without sprite movement")
+    apply_p.add_argument("--speed", choices=tuple(SPEEDS), default="normal",
+                         help="animation pacing")
+    apply_p.add_argument("--ripple-shape", choices=RIPPLE_SHAPES,
+                         default="diamond", help="click-ripple ring shape")
     apply_p.add_argument("--no-click-ripple", action="store_true",
                          help="persist the click ripple as disabled")
     apply_p.add_argument("--out", default="",

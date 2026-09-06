@@ -334,53 +334,101 @@ Panel {
           }
         }
 
-        Row {
+        PanelSectionHeader { text: "Animation" }
+
+        Flow {
+          width: parent.width
           spacing: Style.space(8)
 
+          Repeater {
+            model: [
+              { label: "Animated", key: "animated" },
+              { label: "Motion", key: "motion" },
+              { label: "Click ripple", key: "clickRipple" },
+              { label: "Left-handed", key: "leftHanded" }
+            ]
+
+            delegate: Row {
+              id: optionToggle
+              required property var modelData
+              spacing: Style.space(3)
+
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: optionToggle.modelData.label
+                color: root.barForeground
+                font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                font.pixelSize: Style.font.bodySmall
+              }
+
+              ToggleSwitch {
+                anchors.verticalCenter: parent.verticalCenter
+                checked: root.service
+                  ? root.service[optionToggle.modelData.key] === true : false
+                onToggled: {
+                  if (!root.service) return
+                  var key = optionToggle.modelData.key
+                  var value = !root.service[key]
+                  if (key === "animated") root.service.setAnimated(value)
+                  else if (key === "motion") root.service.setMotion(value)
+                  else if (key === "clickRipple") root.service.setClickRipple(value)
+                  else root.service.setLeftHanded(value)
+                }
+              }
+            }
+          }
+        }
+
+        Row {
+          spacing: Style.space(6)
+
           Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: "Left-handed"
-            color: root.barForeground
+            text: "Speed"
+            color: Color.muted
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.bodySmall
           }
 
-          ToggleSwitch {
-            anchors.verticalCenter: parent.verticalCenter
-            checked: root.service ? root.service.leftHanded === true : false
-            onToggled: if (root.service) root.service.setLeftHanded(!root.service.leftHanded)
-          }
+          Repeater {
+            model: ["calm", "normal", "lively"]
 
-          Item { width: Style.space(10); height: 1 }
+            delegate: Button {
+              required property string modelData
+              text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
+              selected: root.service && root.service.speed === modelData
+              bordered: true
+              foreground: root.barForeground
+              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              onClicked: if (root.service) root.service.setSpeed(modelData)
+            }
+          }
+        }
+
+        Row {
+          spacing: Style.space(6)
+          visible: root.service ? root.service.clickRipple === true : false
 
           Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: "Animated"
-            color: root.barForeground
+            text: "Ripple"
+            color: Color.muted
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.bodySmall
           }
 
-          ToggleSwitch {
-            anchors.verticalCenter: parent.verticalCenter
-            checked: root.service ? root.service.animated === true : true
-            onToggled: if (root.service) root.service.setAnimated(!root.service.animated)
-          }
+          Repeater {
+            model: ["diamond", "circle", "burst"]
 
-          Item { width: Style.space(10); height: 1 }
-
-          Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: "Click ripple"
-            color: root.barForeground
-            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.bodySmall
-          }
-
-          ToggleSwitch {
-            anchors.verticalCenter: parent.verticalCenter
-            checked: root.service ? root.service.clickRipple === true : true
-            onToggled: if (root.service) root.service.setClickRipple(!root.service.clickRipple)
+            delegate: Button {
+              required property string modelData
+              text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
+              selected: root.service && root.service.rippleShape === modelData
+              bordered: true
+              foreground: root.barForeground
+              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              onClicked: if (root.service) root.service.setRippleShape(modelData)
+            }
           }
         }
 

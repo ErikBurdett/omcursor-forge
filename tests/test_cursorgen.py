@@ -97,8 +97,50 @@ def test_animation_flag_flattens_to_one_frame():
     assert len(frames) == 3 and frames[0][1] > 0
     frames, _, _ = cursorgen.shape_spec("wait", "classic", False, animated=False)
     assert frames == [(cursorgen.HOURGLASS_FULL, 0)]
-    glint, _, _ = cursorgen.shape_spec("default", "skeleton", False)
-    assert len(glint) == 4
+    motion, _, _ = cursorgen.shape_spec("default", "skeleton", False)
+    assert len(motion) == 5
+
+
+def test_grid_motion_helpers():
+    grid = ["F...", ".F..", "..F.", "...F"]
+    assert cursorgen.shift_grid(grid, 1, 0) == [".F..", "..F.", "...F", "...."]
+    assert cursorgen.shift_grid(grid, 0, 1) == ["....", "F...", ".F..", "..F."]
+    assert cursorgen.shift_grid(grid, -1, -1) == ["F...", ".F..", "..F.", "...."]
+    bent = cursorgen.bend_finger(cursorgen.HAND_SKELETON, 2)
+    assert len(bent) == cursorgen.BASE
+    assert bent[0] == bent[1] == "." * cursorgen.BASE
+    assert bent[2] == cursorgen.HAND_SKELETON[0]      # tip moved down
+    assert bent[4:] == cursorgen.HAND_SKELETON[4:]    # body planted
+
+
+def test_motion_frames_move_and_flag_disables_them():
+    moving, xhot, yhot = cursorgen.shape_spec("default", "skeleton", False,
+                                              motion=True)
+    still, _, _ = cursorgen.shape_spec("default", "skeleton", False,
+                                       motion=False)
+    assert (xhot, yhot) == (9, 0)  # hotspot never follows the sprite
+    assert len({tuple(grid) for grid, _ in moving}) >= 3
+    assert still == cursorgen.SKELETON_HAND_FRAMES
+    # sword bobs diagonally
+    sword_motion, _, _ = cursorgen.shape_spec("default", "sword", False)
+    assert any(grid == cursorgen.SWORD_BOB for grid, _ in sword_motion)
+
+
+def test_speed_scales_delays(tmp_path):
+    for speed, expected in (("lively", 210), ("calm", 595)):
+        theme = build(tmp_path / speed, "classic", extra=("--speed", speed))
+        images = parse_xcursor((theme / "cursors" / "wait").read_bytes())
+        first = next(img for img in images if img["nominal"] == 24)
+        assert first["delay"] == expected
+
+
+def test_ripple_shapes_differ(tmp_path):
+    frames = {shape: cursorgen.ripple_frames((210, 164, 20), shape)
+              for shape in cursorgen.RIPPLE_SHAPES}
+    assert frames["diamond"] != frames["circle"]
+    assert frames["circle"] != frames["burst"]
+    theme = build(tmp_path, "classic", extra=("--ripple-shape", "burst"))
+    assert (theme / "previews" / "ripple_0.png").is_file()
 
 
 def test_pointer_is_distinct_from_default_for_hand_styles():

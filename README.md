@@ -29,16 +29,21 @@ Hyprland and GTK apps.
 - **Fourteen shapes**, one family: arrow, hand, text beam, wait, progress,
   crosshair, all four resize arrows, move, not-allowed, grab, and grabbing —
   with their common alias names, so apps rarely fall back to another theme.
-- **Animated**: the wait hourglass drains, the progress hourglass flips, and
-  the skeleton's ring glints. One toggle makes everything static if you
-  prefer.
+- **Animated — and it moves**: the hands periodically tap their pointing
+  finger (striking exactly at the hotspot), charge up and tap eagerly over
+  links, the sword and wand bob, the wait hourglass drains, and rings and
+  blades glint. Tune it with *Motion* and *Animated* toggles and a
+  calm/normal/lively *Speed* control — or make everything static.
+- **Click ripple**: an accent-colored ring (diamond, circle, or burst)
+  bursts at the pointer on every left click — even over fullscreen games —
+  via an optional non-consuming mouse bind (`./install-click-ripple`).
 - **Left-handed mode**: mirrors the hand and arrow shapes and their
   hotspots.
 - **Custom image style**: point it at any image file and it becomes your
   cursor, with a configurable hotspot (requires ImageMagick).
-- **Native Hyprcursor + XCursor output**: when `hyprcursor-util` is
-  installed the theme is compiled for Hyprland's preferred format too;
-  otherwise the XCursor files serve everything.
+- **Animation-correct output**: animated builds ship pure XCursor (the
+  only lane Hyprland animates); fully static builds also get a native
+  Hyprcursor compilation when `hyprcursor-util` is installed.
 - **Sizes** 24, 48, and 72 px, pixel-perfect integer scales.
 - **File-driven**: everything is stored in
   `~/.config/cursorforge/settings.json`. Edit it by hand and the change
@@ -71,7 +76,8 @@ can be restored.
   hand edits apply live. Keys: `style` (`classic` | `skeleton` | `image`),
   `colorMode` (`theme` | `custom`), `customColor`, `size` (24/48/72),
   `imagePath`, `imageHotspot` (`"x,y"` on the 24px grid), `leftHanded`,
-  `animated`, `active`.
+  `animated`, `motion`, `speed` (`calm` | `normal` | `lively`),
+  `rippleShape` (`diamond` | `circle` | `burst`), `clickRipple`, `active`.
 - **Script it** over the shell IPC:
 
   ```bash
@@ -82,6 +88,10 @@ can be restored.
   omarchy-shell io.github.erikburdett.cursorforge cycle
   omarchy-shell io.github.erikburdett.cursorforge toggleLeftHanded
   omarchy-shell io.github.erikburdett.cursorforge toggleAnimation
+  omarchy-shell io.github.erikburdett.cursorforge toggleMotion
+  omarchy-shell io.github.erikburdett.cursorforge setSpeed lively
+  omarchy-shell io.github.erikburdett.cursorforge setRippleShape burst
+  omarchy-shell io.github.erikburdett.cursorforge toggleClickRipple
   omarchy-shell io.github.erikburdett.cursorforge setImage /path/to/img.png
   omarchy-shell io.github.erikburdett.cursorforge setImageHotspot "3,1"
   omarchy-shell io.github.erikburdett.cursorforge reset
@@ -94,9 +104,11 @@ recolors them, and writes a standards-compliant XCursor theme to
 `~/.local/share/icons/CursorForge` — fourteen shapes with their common
 aliases, at 24/48/72 px with premultiplied alpha, correct hotspots, and
 multi-frame animation where a shape animates. Anything else inherits from
-Adwaita. When `hyprcursor-util` is present, the same art is compiled into a
-native Hyprcursor theme in the same directory, which Hyprland picks up
-first. It then applies the theme with `hyprctl setcursor` and GTK's
+Adwaita. Animated builds deliberately skip Hyprcursor output — Hyprland
+only animates the XCursor lane when no Hyprcursor theme is present — while
+fully static builds also get a native Hyprcursor compilation when
+`hyprcursor-util` is installed. It applies the theme with `hyprctl
+setcursor` and GTK's
 `org.gnome.desktop.interface cursor-theme`/`cursor-size` settings, and the
 service re-asserts it when the shell starts, so it survives logins without
 touching any Hyprland or GTK config files.
