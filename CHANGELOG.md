@@ -4,6 +4,23 @@ All notable changes to Cursor Forge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-09-06
+
+### Added
+
+- **Lich sleeve style**: the skeletal hand emerging from a dark violet
+  wizard-robe sleeve with a braided cuff in the accent color and tattered
+  cloth drooping off the wrist. Native 24px and 48px art, animated ring
+  gem, left-handed support.
+
+### Fixed
+
+- Re-applying a regenerated theme now also bounces `hyprctl setcursor`
+  through the inherited theme. Hyprland caches the loaded cursor theme by
+  name, so new art under the same theme name could keep rendering stale
+  frames until relog — this was why art updates sometimes looked
+  unchanged.
+
 ## [1.3.0] - 2026-09-06
 
 ### Changed

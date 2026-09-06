@@ -36,8 +36,8 @@ THEME_NAME = "CursorForge"
 BASE = 24                # art is drawn on a 24x24 grid
 SCALES = (1, 2, 3)       # emit nominal sizes 24, 48, 72
 VALID_SIZES = tuple(BASE * s for s in SCALES)
-STYLES = ("classic", "skeleton", "sword", "wand", "image")
-ART_STYLES = ("classic", "skeleton", "sword", "wand")
+STYLES = ("classic", "skeleton", "lich", "sword", "wand", "image")
+ART_STYLES = ("classic", "skeleton", "lich", "sword", "wand")
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 HOTSPOT_RE = re.compile(r"^\d{1,2},\d{1,2}$")
 
@@ -448,19 +448,36 @@ MINI_HOURGLASS_DRAINED = [
 HAND_SKELETON_GLINT = [row.replace("#RR#", "#WR#") for row in HAND_SKELETON]
 SKELETON_HAND_FRAMES = [(HAND_SKELETON, 1100), (HAND_SKELETON_GLINT, 140)]
 
+# The lich variant: the same hand emerging from a wizard-robe sleeve that
+# droops off the wrist in tattered points. Cloth roles: C dark, c fold.
+HAND_LICH = HAND_SKELETON[:14] + [
+    "......#LBBbBBbBBbd#.....",
+    "......#LBBbBBbBBbd#.....",
+    "...#RRdRRRRdRRRRdR#.....",
+    "...#CcCCCcCCCCcCCC#.....",
+    "...#CcCCCcCCCCcCCC#.....",
+    "...#CcCCCcCCCC####......",
+    "..#CcC#.#CcC#...........",
+    "..#Cc#..#Cc#............",
+    "..#C#....##.............",
+    "...#....................",
+]
+HAND_LICH_GLINT = [row.replace("#RR#", "#WR#") for row in HAND_LICH]
+LICH_HAND_FRAMES = [(HAND_LICH, 1100), (HAND_LICH_GLINT, 140)]
+
 HIRES = 48  # the 48px nominal gets native art instead of a 2x upscale
 
 
-def make_hand_skeleton_48(glint=False):
-    """Native 48x48 skeletal hand.
+def make_hand_48(base, glint=False):
+    """Native 48x48 hand art from a proven 24px silhouette.
 
-    Built from the proven 24px silhouette, doubled, then refined for the
-    larger canvas: convex outline corners are beveled away so curves read
-    as curves, the ring gains a gem (which sparkles on the glint frame),
-    the fingertip gets a nail highlight, and the palm a couple of cracks.
+    The base grid is doubled, then refined for the larger canvas: convex
+    outline corners are beveled away so curves read as curves, the ring
+    gains a gem (which sparkles on the glint frame), the fingertip gets a
+    nail highlight, and the palm a couple of hairline cracks.
     """
     grid = [[ch for ch in row for _ in (0, 1)]
-            for row in HAND_SKELETON for _ in (0, 1)]
+            for row in base for _ in (0, 1)]
 
     def at(x, y):
         if 0 <= x < HIRES and 0 <= y < HIRES:
@@ -488,9 +505,10 @@ def make_hand_skeleton_48(glint=False):
         grid[y][x] = "."
 
     # Ring gem: the doubled ring is a 2x2 R block per original pixel; set a
-    # bright gem that swaps position on the glint frame.
+    # bright gem that swaps position on the glint frame. The count ceiling
+    # keeps wide accent bands (the lich cuff braid) from matching.
     ring_rows = [y for y in range(HIRES)
-                 if "R" in grid[y] and grid[y].count("R") >= 4]
+                 if 4 <= grid[y].count("R") <= 8]
     if ring_rows:
         y = ring_rows[0]
         first = grid[y].index("R")
@@ -515,11 +533,16 @@ def make_hand_skeleton_48(glint=False):
     return ["".join(line) for line in grid]
 
 
-HAND_SKELETON_48 = make_hand_skeleton_48(False)
-HAND_SKELETON_48_GLINT = make_hand_skeleton_48(True)
+HAND_SKELETON_48 = make_hand_48(HAND_SKELETON, False)
+HAND_SKELETON_48_GLINT = make_hand_48(HAND_SKELETON, True)
 SKELETON_HAND_48_FRAMES = [(HAND_SKELETON_48, 1100),
                            (HAND_SKELETON_48_GLINT, 140)]
 SKELETON_HIRES = {"frames": SKELETON_HAND_48_FRAMES, "hotspot": (18, 0)}
+
+HAND_LICH_48 = make_hand_48(HAND_LICH, False)
+HAND_LICH_48_GLINT = make_hand_48(HAND_LICH, True)
+LICH_HAND_48_FRAMES = [(HAND_LICH_48, 1100), (HAND_LICH_48_GLINT, 140)]
+LICH_HIRES = {"frames": LICH_HAND_48_FRAMES, "hotspot": (18, 0)}
 
 # A blade pointing to the hotspot, guard and pommel in the accent color.
 SWORD = [
@@ -660,11 +683,15 @@ SHAPES = {
     "default": {"classic": static(ARROW, 1, 1),
                 "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0),
                              "hires": SKELETON_HIRES},
+                "lich": {"frames": LICH_HAND_FRAMES, "hotspot": (9, 0),
+                         "hires": LICH_HIRES},
                 "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
     "pointer": {"classic": static(HAND_CLASSIC, 8, 0),
                 "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0),
                              "hires": SKELETON_HIRES},
+                "lich": {"frames": LICH_HAND_FRAMES, "hotspot": (9, 0),
+                         "hires": LICH_HIRES},
                 "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
     "text": {"classic": static(TEXT_BEAM, 8, 12)},
@@ -714,6 +741,9 @@ OUTLINE_RGB = (18, 14, 10)
 BONE = {"L": (247, 242, 226), "B": (226, 214, 186), "b": (183, 166, 131),
         "d": (122, 104, 74)}
 BONE_OUTLINE_RGB = (46, 34, 22)  # warm local-color outline, not sticker black
+# Robe cloth for the lich sleeve: dark violet with a lighter fold, kept
+# clearly above black so the sleeve still reads over dark apps.
+CLOTH = {"C": (38, 28, 50), "c": (76, 60, 102)}
 
 
 def parse_color(value):
@@ -749,6 +779,8 @@ def palette(style, rgb):
         "L": (*BONE["L"], 255),
         "b": (*BONE["b"], 255),
         "d": (*BONE["d"], 255),
+        "C": (*CLOTH["C"], 255),
+        "c": (*CLOTH["c"], 255),
     }
     if style == "skeleton":
         roles.update({
@@ -904,7 +936,7 @@ def grid_style_for(style):
 
 
 def palette_style_for(style):
-    return "skeleton" if style == "skeleton" else "classic"
+    return "skeleton" if style in ("skeleton", "lich") else "classic"
 
 
 def resolve_frames(frames, xhot, yhot, size, mirrored, animated):
@@ -1126,6 +1158,9 @@ def apply_cursor(theme, size):
         warnings.append("gsettings not found; GTK apps keep their cursor theme")
     hyprctl = shutil.which("hyprctl")
     if hyprctl:
+        # Hyprland caches the loaded theme by name; bounce through the
+        # inherited theme so a regenerated CursorForge is re-read from disk.
+        run_quiet([hyprctl, "setcursor", "Adwaita", str(size)])
         ok, out = run_quiet([hyprctl, "setcursor", theme, str(size)])
         if not ok or out.lower().startswith("invalid"):
             warnings.append(f"hyprctl setcursor: {out}")

@@ -34,6 +34,8 @@ ALL_GRIDS = {
     "PROGRESS_ARROW_DRAINED": cursorgen.PROGRESS_ARROW_DRAINED,
     "GRAB_HAND": cursorgen.GRAB_HAND,
     "GRABBING_HAND": cursorgen.GRABBING_HAND,
+    "HAND_LICH": cursorgen.HAND_LICH,
+    "HAND_LICH_GLINT": cursorgen.HAND_LICH_GLINT,
     "SWORD": cursorgen.SWORD,
     "SWORD_GLINT": cursorgen.SWORD_GLINT,
     "WAND": cursorgen.WAND,
@@ -101,7 +103,8 @@ def test_animation_flag_flattens_to_one_frame():
 
 def test_hand_48_grids_are_well_formed():
     roles = cursorgen.palette("skeleton", (210, 164, 20))
-    for grid in (cursorgen.HAND_SKELETON_48, cursorgen.HAND_SKELETON_48_GLINT):
+    for grid in (cursorgen.HAND_SKELETON_48, cursorgen.HAND_SKELETON_48_GLINT,
+                 cursorgen.HAND_LICH_48, cursorgen.HAND_LICH_48_GLINT):
         assert len(grid) == cursorgen.HIRES
         assert all(len(row) == cursorgen.HIRES for row in grid)
         cursorgen.render_grid(grid, roles, cursorgen.HIRES)
@@ -226,8 +229,8 @@ def test_transparent_pixels_are_fully_zero(tmp_path):
 
 def test_previews_are_valid_pngs(tmp_path):
     theme = build(tmp_path, "classic")
-    for name in ("current.png", "classic.png", "skeleton.png", "sword.png",
-                 "wand.png", "shapes.png"):
+    for name in ("current.png", "classic.png", "skeleton.png", "lich.png",
+                 "sword.png", "wand.png", "shapes.png"):
         data = (theme / "previews" / name).read_bytes()
         assert data[:8] == b"\x89PNG\r\n\x1a\n", name
         width, height = struct.unpack_from(">II", data, 16)

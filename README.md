@@ -20,6 +20,9 @@ Hyprland and GTK apps.
   its index finger — segmented phalanges, knuckle bones, a theme-colored
   ring, and twin wrist bones. At size 48 it renders dedicated hi-res art
   with beveled curves, a sparkling ring gem, and hairline bone cracks.
+- **Lich sleeve**: the same hand rising out of a dark wizard-robe sleeve —
+  braided accent cuff, violet cloth, tattered points drooping off the
+  wrist.
 - **Sword and Wand styles**: a theme-colored blade with a bone crossguard,
   and a wood wand with a sparkling accent star — because your cursor can be
   a fantasy artifact too.
