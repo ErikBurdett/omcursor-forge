@@ -11,7 +11,7 @@ Item {
   property var shell: null
   property var manifest: null
   readonly property string pluginId: "io.github.erikburdett.cursorforge"
-  readonly property var styles: ["classic", "skeleton", "image"]
+  readonly property var styles: ["classic", "skeleton", "sword", "wand", "image"]
   readonly property var sizes: [24, 48, 72]
 
   // Mirrors ~/.config/cursorforge/settings.json. `active` means the user has
@@ -70,6 +70,8 @@ Item {
 
   function styleLabel(name) {
     if (name === "skeleton") return "Skeleton hand"
+    if (name === "sword") return "Sword"
+    if (name === "wand") return "Wand"
     if (name === "image") return "Custom image"
     return "Classic arrow"
   }
@@ -82,7 +84,8 @@ Item {
   }
 
   function cycleStyle() {
-    var usable = imagePath !== "" ? styles : ["classic", "skeleton"]
+    var usable = imagePath !== "" ? styles
+      : styles.filter(function(name) { return name !== "image" })
     var at = usable.indexOf(style)
     setStyle(usable[(at + 1) % usable.length])
   }

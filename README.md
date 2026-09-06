@@ -19,6 +19,9 @@ Hyprland and GTK apps.
 - **Skeleton hand**: a hand-authored, retro pixel-art skeletal hand pointing
   its index finger — segmented phalanges, knuckle bones, a theme-colored
   ring, and twin wrist bones.
+- **Sword and Wand styles**: a theme-colored blade with a bone crossguard,
+  and a wood wand with a sparkling accent star — because your cursor can be
+  a fantasy artifact too.
 - **Fourteen shapes**, one family: arrow, hand, text beam, wait, progress,
   crosshair, all four resize arrows, move, not-allowed, grab, and grabbing —
   with their common alias names, so apps rarely fall back to another theme.

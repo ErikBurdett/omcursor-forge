@@ -36,7 +36,8 @@ THEME_NAME = "CursorForge"
 BASE = 24                # art is drawn on a 24x24 grid
 SCALES = (1, 2, 3)       # emit nominal sizes 24, 48, 72
 VALID_SIZES = tuple(BASE * s for s in SCALES)
-STYLES = ("classic", "skeleton", "image")
+STYLES = ("classic", "skeleton", "sword", "wand", "image")
+ART_STYLES = ("classic", "skeleton", "sword", "wand")
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 HOTSPOT_RE = re.compile(r"^\d{1,2},\d{1,2}$")
 
@@ -447,6 +448,69 @@ MINI_HOURGLASS_DRAINED = [
 HAND_SKELETON_GLINT = [row.replace("#RR#", "#WR#") for row in HAND_SKELETON]
 SKELETON_HAND_FRAMES = [(HAND_SKELETON, 1100), (HAND_SKELETON_GLINT, 140)]
 
+# A blade pointing to the hotspot, guard and pommel in the accent color.
+SWORD = [
+    "##......................",
+    "#H#.....................",
+    "#HF#....................",
+    ".#HF#...................",
+    "..#HF#..................",
+    "...#HF#.................",
+    "....#HF#................",
+    ".....#HF#...............",
+    "......#HF#....##........",
+    ".......#HF#..#LB#.......",
+    "........#HF#LB#.........",
+    ".........#HLB#..........",
+    ".........#LB#...........",
+    "........#LB##bb#........",
+    "........##...#bb#.......",
+    "..............#bb#......",
+    "...............#RR#.....",
+    "...............#RR#.....",
+    "................##......",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+
+# A wand whose starred tip is the hotspot; the star glints on a slow loop.
+WAND = [
+    "........................",
+    "....#.....#F............",
+    "...#R#..................",
+    "..#RWR#.................",
+    ".#RWWWR#................",
+    "..#RWR#.................",
+    ".F.#R#..................",
+    "....#.#bd#..............",
+    ".......#bd#.............",
+    "........#bd#............",
+    ".........#bd#...........",
+    "..........#bd#..........",
+    "...........#bd#.........",
+    "............#bd#........",
+    ".............#bd#.......",
+    "..............#bd#......",
+    "...............#bd#.....",
+    "................#bd#....",
+    ".................#bd#...",
+    "..................#bd#..",
+    "...................###..",
+    "........................",
+    "........................",
+    "........................",
+]
+
+WAND_GLINT = [row.replace("#RWWWR#", "#WRRRW#").replace("#RWR#", "#WRW#")
+              .replace("#R#", "#W#") for row in WAND]
+SWORD_GLINT = [row.replace("#HF#", "#WF#") if index in (2, 3, 4)
+               else row for index, row in enumerate(SWORD)]
+SWORD_FRAMES = [(SWORD, 1400), (SWORD_GLINT, 120)]
+WAND_FRAMES = [(WAND, 900), (WAND_GLINT, 180)]
+
 
 def mirror_grid(grid):
     return [row[::-1] for row in grid]
@@ -521,9 +585,13 @@ def static(grid, xhot, yhot):
 # grid, which the skeleton palette renders in bone tones.
 SHAPES = {
     "default": {"classic": static(ARROW, 1, 1),
-                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0)}},
+                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0)},
+                "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
+                "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
     "pointer": {"classic": static(HAND_CLASSIC, 8, 0),
-                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0)}},
+                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0)},
+                "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
+                "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
     "text": {"classic": static(TEXT_BEAM, 8, 12)},
     "wait": {"classic": {"frames": WAIT_FRAMES, "hotspot": (10, 10)}},
     "progress": {"classic": {"frames": PROGRESS_FRAMES, "hotspot": (1, 1)}},
@@ -756,6 +824,14 @@ def config_path():
     return base / "cursorforge" / "settings.json"
 
 
+def grid_style_for(style):
+    return style if style in ART_STYLES else "classic"
+
+
+def palette_style_for(style):
+    return "skeleton" if style == "skeleton" else "classic"
+
+
 def shape_spec(shape, grid_style, left_handed, animated=True):
     variants = SHAPES[shape]
     spec = variants.get(grid_style) or variants["classic"]
@@ -772,7 +848,7 @@ def shape_spec(shape, grid_style, left_handed, animated=True):
 def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
                  animated=True):
     """Resolve one shape to [(nominal, w, h, xhot, yhot, delay, pixels)]."""
-    grid_style = "skeleton" if style == "skeleton" else "classic"
+    grid_style = grid_style_for(style)
     if style == "image" and shape in ("default", "pointer"):
         hx, hy = image_hotspot
         return [(BASE * f, BASE * f, BASE * f, hx * f, hy * f, 0,
@@ -848,8 +924,7 @@ def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
     cursors_dir = theme_dir / "cursors"
     cursors_dir.mkdir(parents=True, exist_ok=True)
 
-    grid_style = "skeleton" if style == "skeleton" else "classic"
-    roles = palette(grid_style, rgb)
+    roles = palette(palette_style_for(style), rgb)
 
     if style == "image" and (not image_path or not Path(image_path).is_file()):
         raise RuntimeError(f"image file not found: {image_path!r}")
@@ -875,8 +950,9 @@ def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
     # style as current.png (the bar widget's icon), and a one-row gallery of
     # every shape for the panel.
     previews = theme_dir / "previews"
-    for preview_style, grid in (("classic", ARROW), ("skeleton", HAND_SKELETON)):
-        style_roles = palette(preview_style, rgb)
+    for preview_style in ART_STYLES:
+        style_roles = palette(palette_style_for(preview_style), rgb)
+        grid = SHAPES["default"][preview_style]["frames"][0][0]
         source = mirror_grid(grid) if left_handed else grid
         atomic_write(previews / f"{preview_style}.png",
                      png_bytes(render_grid(source, style_roles), BASE, BASE))
@@ -1036,8 +1112,8 @@ def cmd_reset(args):
 def cmd_preview(args):
     """Dev tool: render every shape of a style, enlarged, into one PNG."""
     rgb = parse_color(args.color)
-    grid_style = "skeleton" if args.style == "skeleton" else "classic"
-    roles = palette(grid_style, rgb)
+    grid_style = grid_style_for(args.style)
+    roles = palette(palette_style_for(args.style), rgb)
     factor = args.scale
     gap = 4 * factor
     tile = BASE * factor
@@ -1089,8 +1165,7 @@ def main(argv=None):
     sub.add_parser("reset", help="restore the previous cursor theme")
 
     preview_p = sub.add_parser("preview", help="render an art contact sheet")
-    preview_p.add_argument("--style", choices=("classic", "skeleton"),
-                           default="classic")
+    preview_p.add_argument("--style", choices=ART_STYLES, default="classic")
     preview_p.add_argument("--color", default="#7aa2f7")
     preview_p.add_argument("--scale", type=int, default=8)
     preview_p.add_argument("--dark", action="store_true")

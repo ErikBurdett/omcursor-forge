@@ -146,6 +146,8 @@ Panel {
             model: [
               { key: "classic", label: "Classic" },
               { key: "skeleton", label: "Skeleton" },
+              { key: "sword", label: "Sword" },
+              { key: "wand", label: "Wand" },
               { key: "image", label: "Image" }
             ]
 

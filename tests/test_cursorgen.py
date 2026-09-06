@@ -34,6 +34,10 @@ ALL_GRIDS = {
     "PROGRESS_ARROW_DRAINED": cursorgen.PROGRESS_ARROW_DRAINED,
     "GRAB_HAND": cursorgen.GRAB_HAND,
     "GRABBING_HAND": cursorgen.GRABBING_HAND,
+    "SWORD": cursorgen.SWORD,
+    "SWORD_GLINT": cursorgen.SWORD_GLINT,
+    "WAND": cursorgen.WAND,
+    "WAND_GLINT": cursorgen.WAND_GLINT,
 }
 
 
@@ -64,9 +68,9 @@ def test_grids_are_well_formed():
             cursorgen.render_grid(grid, cursorgen.palette(style, (107, 138, 105)))
 
 
-def test_every_shape_resolves_for_both_styles():
+def test_every_shape_resolves_for_all_styles():
     for shape in cursorgen.SHAPES:
-        for grid_style in ("classic", "skeleton"):
+        for grid_style in cursorgen.ART_STYLES:
             for left_handed in (False, True):
                 frames, xhot, yhot = cursorgen.shape_spec(
                     shape, grid_style, left_handed)
@@ -129,13 +133,13 @@ def build(tmp_path, style, color="#6b8a69", image=None, extra=()):
     return tmp_path / cursorgen.THEME_NAME
 
 
-@pytest.mark.parametrize("style", ["classic", "skeleton"])
+@pytest.mark.parametrize("style", list(cursorgen.ART_STYLES))
 def test_theme_builds_valid_xcursor_files(tmp_path, style):
     theme = build(tmp_path, style)
     index = (theme / "index.theme").read_text()
     assert "Inherits=Adwaita" in index
 
-    grid_style = "skeleton" if style == "skeleton" else "classic"
+    grid_style = cursorgen.grid_style_for(style)
     for shape, names in cursorgen.ALIASES.items():
         frames, xhot, yhot = cursorgen.shape_spec(shape, grid_style, False)
         for name in names:
@@ -194,7 +198,8 @@ def test_transparent_pixels_are_fully_zero(tmp_path):
 
 def test_previews_are_valid_pngs(tmp_path):
     theme = build(tmp_path, "classic")
-    for name in ("current.png", "classic.png", "skeleton.png", "shapes.png"):
+    for name in ("current.png", "classic.png", "skeleton.png", "sword.png",
+                 "wand.png", "shapes.png"):
         data = (theme / "previews" / name).read_bytes()
         assert data[:8] == b"\x89PNG\r\n\x1a\n", name
         width, height = struct.unpack_from(">II", data, 16)

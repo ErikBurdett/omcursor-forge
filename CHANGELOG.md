@@ -4,6 +4,16 @@ All notable changes to Cursor Forge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-09-06
+
+### Added
+
+- Two new default styles: **Sword** (theme-colored blade with a bone
+  crossguard and gem pommel; the blade edge glints) and **Wand** (dark wood
+  shaft with a starred accent tip that sparkles). Both follow the theme
+  accent, animate under the existing *Animated* toggle, and appear in the
+  panel's style tiles, the style cycle, and the previews.
+
 ## [1.1.0] - 2026-09-05
 
 ### Added
