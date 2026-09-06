@@ -36,8 +36,8 @@ BASE = 24                # art is drawn on a 24x24 grid
 SCALES = (1, 2, 3, 4)    # emit nominal sizes 24, 48, 72, 96 (96 for HiDPI:
                          # Hyprland requests size x ceil(scale) from libXcursor)
 VALID_SIZES = tuple(BASE * s for s in SCALES)
-STYLES = ("classic", "lich", "sword", "wand", "modern", "d20", "terminal", "image")
-ART_STYLES = ("classic", "lich", "sword", "wand", "modern", "d20", "terminal")
+STYLES = ("classic", "lich", "sword", "wand", "d20", "terminal", "image")
+ART_STYLES = ("classic", "lich", "sword", "wand", "d20", "terminal")
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 HOTSPOT_RE = re.compile(r"^\d{1,2},\d{1,2}$")
 
@@ -702,37 +702,6 @@ NOT_ALLOWED = make_not_allowed()
 PROGRESS_ARROW = compose_grid(ARROW, MINI_HOURGLASS, 14, 12)
 PROGRESS_ARROW_DRAINED = compose_grid(ARROW, MINI_HOURGLASS_DRAINED, 14, 12)
 
-# A modern, less-retro arrow: sleek narrow silhouette, crisp white border,
-# theme-colored fill, and half-alpha edge pixels standing in for
-# anti-aliasing. Deliberately static — modern cursors keep still.
-MODERN = [
-    "........................",
-    "..O.....................",
-    "..OOo...................",
-    "..OFOo..................",
-    "..OFFOo.................",
-    "..OFFFOo................",
-    "..OFFFFOo...............",
-    "..OFFFFFOo..............",
-    "..OFFFFFFOo.............",
-    "..OFFFFFFFOo............",
-    "..OFFFFFFFFOo...........",
-    "..OFFFFFFFFFOo..........",
-    "..OFFFFFOOOOOOo.........",
-    "..OFFOFFOo..............",
-    "..OFOooOFFOo............",
-    "..OOo...oOFFOo..........",
-    "..Oo.....oOFFOo.........",
-    "..........oOFOo.........",
-    "...........oOOo.........",
-    "............oOo.........",
-    "........................",
-    "........................",
-    "........................",
-    "........................",
-]
-
-
 def make_d20():
     """A twenty-sided die: hexagonal silhouette, shaded faces, and a tiny
     20 on the front face. Built geometrically so the edges stay straight."""
@@ -880,7 +849,6 @@ SHAPES = {
                           "motion": SWORD_MOTION_FRAMES},
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4),
                          "motion": WAND_MOTION_FRAMES},
-                "modern": static(MODERN, 2, 1),
                 "d20": {"frames": D20_FRAMES, "hotspot": (11, 1),
                         "motion": D20_MOTION},
                 "terminal": {"frames": TERMINAL_FRAMES, "hotspot": (1, 3)}},
@@ -974,10 +942,6 @@ def palette(style, rgb):
         ".": (0, 0, 0, 0),
         "R": (*rgb, 255),
         "W": (255, 255, 248, 255),
-        "O": (250, 250, 252, 255),
-        "o": (250, 250, 252, 96),
-        "f": (*rgb, 140),
-        "K": (38, 38, 43, 255),
         "B": (*BONE["B"], 255),
         "L": (*BONE["L"], 255),
         "b": (*BONE["b"], 255),

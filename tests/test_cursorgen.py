@@ -39,7 +39,6 @@ ALL_GRIDS = {
     "SWORD_GLINT": cursorgen.SWORD_GLINT,
     "WAND": cursorgen.WAND,
     "WAND_GLINT": cursorgen.WAND_GLINT,
-    "MODERN": cursorgen.MODERN,
     "D20": cursorgen.D20,
     "D20_GLINT": cursorgen.D20_GLINT,
     "TERMINAL_ON": cursorgen.TERMINAL_ON,
@@ -298,7 +297,7 @@ def test_transparent_pixels_are_fully_zero(tmp_path):
 
 def test_previews_are_valid_pngs(tmp_path):
     theme = build(tmp_path, "classic")
-    for name in ("current.png", "classic.png", "lich.png", "modern.png",
+    for name in ("current.png", "classic.png", "lich.png",
                  "d20.png", "terminal.png",
                  "sword.png", "wand.png", "shapes.png", "ripple_0.png",
                  "ripple_3.png"):
@@ -382,16 +381,6 @@ def test_tint_pixels_colorizes_by_luminance():
     assert tinted[1] == (0, 0, 0, 255)          # black stays black
     assert tinted[2][3] == 60                   # alpha preserved
     assert 0 < tinted[2][0] < 210
-
-
-def test_modern_style_is_static_and_antialiased(tmp_path):
-    frames, xhot, yhot = cursorgen.shape_spec("default", "modern", False)
-    assert len(frames) == 1 and frames[0][1] == 0
-    assert (xhot, yhot) == (2, 1)
-    roles = cursorgen.palette("classic", (210, 164, 20))
-    pixels = cursorgen.render_grid(cursorgen.MODERN, roles)
-    alphas = {a for _, _, _, a in pixels}
-    assert 96 in alphas and 255 in alphas  # AA edge + solid pixels
 
 
 def test_terminal_caret_blinks():

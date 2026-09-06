@@ -11,7 +11,7 @@ Item {
   property var shell: null
   property var manifest: null
   readonly property string pluginId: "io.github.erikburdett.cursorforge"
-  readonly property var styles: ["classic", "lich", "sword", "wand", "modern", "d20", "terminal", "image"]
+  readonly property var styles: ["classic", "lich", "sword", "wand", "d20", "terminal", "image"]
   readonly property var sizes: [24, 48, 72, 96]
 
   // Mirrors ~/.config/cursorforge/settings.json. `active` means the user has
@@ -82,7 +82,6 @@ Item {
     if (name === "lich") return "Lich sleeve"
     if (name === "sword") return "Sword"
     if (name === "wand") return "Wand"
-    if (name === "modern") return "Modern"
     if (name === "d20") return "D20"
     if (name === "terminal") return "Terminal"
     if (name === "image") return "Custom image"
@@ -300,8 +299,9 @@ Item {
     if (!parsed || typeof parsed !== "object") parsed = {}
 
     // v2.0.0 migration: the standalone skeleton style folded into lich.
-    var parsedStyle = String(parsed.style) === "skeleton" ? "lich"
-      : String(parsed.style)
+    var parsedStyle = String(parsed.style)
+    if (parsedStyle === "skeleton") parsedStyle = "lich"
+    if (parsedStyle === "modern") parsedStyle = "classic"
     var nextStyle = styles.indexOf(parsedStyle) >= 0 ? parsedStyle : style
     var nextMode = parsed.colorMode === "custom" ? "custom" : "theme"
     var nextColor = isValidColor(parsed.customColor)

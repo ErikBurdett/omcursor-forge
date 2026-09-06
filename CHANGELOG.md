@@ -4,6 +4,14 @@ All notable changes to OmCursor Forge (formerly Cursor Forge) are documented her
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.4.0] - 2026-09-06
+
+### Removed
+
+- The short-lived `modern` style (added in 2.2.0, never in a marketplace
+  release). Settings referencing it migrate to `classic`. The style
+  roster is classic, lich, sword, wand, d20, terminal, and image.
+
 ## [2.3.0] - 2026-09-06
 
 ### Fixed

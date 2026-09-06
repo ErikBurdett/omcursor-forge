@@ -161,7 +161,6 @@ Panel {
               { key: "lich", label: "Lich" },
               { key: "sword", label: "Sword" },
               { key: "wand", label: "Wand" },
-              { key: "modern", label: "Modern" },
               { key: "d20", label: "D20" },
               { key: "terminal", label: "Terminal" },
               { key: "image", label: "Image" }

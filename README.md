@@ -26,9 +26,8 @@ Hyprland and GTK apps.
 - **Sword and Wand styles**: a theme-colored blade with a bone crossguard,
   and a wood wand with a sparkling accent star — because your cursor can be
   a fantasy artifact too.
-- **Nerd styles**: a **Modern** sleek arrow (white border, theme-colored
-  fill, anti-aliased edges, deliberately still), a **D20** with a real 20
-  on its face, and a **Terminal** prompt whose block caret blinks.
+- **Nerd styles**: a **D20** with a real 20 on its face (it glints and
+  bobs), and a **Terminal** prompt whose block caret blinks.
 - **Fourteen shapes**, one family: arrow, hand, text beam, wait, progress,
   crosshair, all four resize arrows, move, not-allowed, grab, and grabbing —
   with their common alias names, so apps rarely fall back to another theme.
@@ -80,7 +79,7 @@ can be restored.
   Changes apply immediately.
 - **Scroll** on the bar widget to cycle styles.
 - **Edit the file**: `~/.config/cursorforge/settings.json` is watched;
-  hand edits apply live. Keys: `style` (`classic` | `lich` | `sword` | `wand` | `modern` | `d20` | `terminal` | `image`),
+  hand edits apply live. Keys: `style` (`classic` | `lich` | `sword` | `wand` | `d20` | `terminal` | `image`),
   `colorMode` (`theme` | `custom`), `customColor`, `size` (24/48/72/96),
   `imagePath`, `imageHotspot` (`"x,y"` on the 24px grid), `leftHanded`,
   `animated`, `motion`, `speed` (`calm` | `normal` | `lively`),
