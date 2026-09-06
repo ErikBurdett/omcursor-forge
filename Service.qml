@@ -22,7 +22,10 @@ Item {
   property string colorMode: "theme"
   property string customColor: "#7aa2f7"
   property string imagePath: ""
+  property string imageHotspot: "0,0"
   property int cursorSize: 24
+  property bool leftHanded: false
+  property bool animated: true
   property bool active: false
 
   readonly property bool busy: generator.running
@@ -115,6 +118,25 @@ Item {
     return true
   }
 
+  function setLeftHanded(enabled) {
+    leftHanded = enabled === true
+    requestApply()
+    return true
+  }
+
+  function setAnimated(enabled) {
+    animated = enabled === true
+    requestApply()
+    return true
+  }
+
+  function setImageHotspot(spot) {
+    if (!/^\d{1,2},\d{1,2}$/.test(String(spot))) return false
+    imageHotspot = String(spot)
+    if (style === "image") requestApply()
+    return true
+  }
+
   // A real apply: the user asked for this cursor. Debounced so a theme
   // switch or a fast series of clicks runs the generator once.
   function requestApply() {
@@ -136,7 +158,10 @@ Item {
       "--style", style, "--color", effectiveColor,
       "--color-mode", colorMode, "--custom-color", customColor,
       "--size", String(cursorSize)]
-    if (style === "image") argv.push("--image", imagePath)
+    if (style === "image") argv.push("--image", imagePath,
+      "--image-hotspot", imageHotspot)
+    if (leftHanded) argv.push("--left-handed")
+    if (!animated) argv.push("--no-animation")
     if (!fullApply) argv.push("--no-apply", "--no-save")
     generator.exec(argv)
   }
@@ -175,18 +200,27 @@ Item {
     var nextColor = isValidColor(parsed.customColor)
       ? String(parsed.customColor).toLowerCase() : customColor
     var nextImage = typeof parsed.imagePath === "string" ? parsed.imagePath : imagePath
+    var nextHotspot = /^\d{1,2},\d{1,2}$/.test(String(parsed.imageHotspot))
+      ? String(parsed.imageHotspot) : imageHotspot
     var nextSize = sizes.indexOf(Number(parsed.size)) >= 0
       ? Number(parsed.size) : cursorSize
+    var nextLeftHanded = parsed.leftHanded === true
+    var nextAnimated = parsed.animated !== false
     var nextActive = parsed.active === true
     var changed = nextStyle !== style || nextMode !== colorMode
       || nextColor !== customColor || nextImage !== imagePath
-      || nextSize !== cursorSize || nextActive !== active
+      || nextHotspot !== imageHotspot || nextSize !== cursorSize
+      || nextLeftHanded !== leftHanded || nextAnimated !== animated
+      || nextActive !== active
 
     style = nextStyle
     colorMode = nextMode
     customColor = nextColor
     imagePath = nextImage
+    imageHotspot = nextHotspot
     cursorSize = nextSize
+    leftHanded = nextLeftHanded
+    animated = nextAnimated
     active = nextActive
 
     if (firstLoad) {
@@ -245,7 +279,10 @@ Item {
         customColor: root.customColor,
         effectiveColor: root.effectiveColor,
         imagePath: root.imagePath,
+        imageHotspot: root.imageHotspot,
         size: root.cursorSize,
+        leftHanded: root.leftHanded,
+        animated: root.animated,
         active: root.active,
         busy: root.busy,
         lastError: root.lastError,
@@ -268,6 +305,20 @@ Item {
 
     function setImage(path: string): string {
       return root.setImagePath(path) ? "ok" : "expected an absolute file path"
+    }
+
+    function setImageHotspot(spot: string): string {
+      return root.setImageHotspot(spot) ? "ok" : "expected x,y within 0-23"
+    }
+
+    function toggleLeftHanded(): string {
+      root.setLeftHanded(!root.leftHanded)
+      return root.leftHanded ? "left" : "right"
+    }
+
+    function toggleAnimation(): string {
+      root.setAnimated(!root.animated)
+      return root.animated ? "animated" : "static"
     }
   }
 }

@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Cursor Forge — generate and apply pixel-art XCursor themes for Omarchy.
+"""Cursor Forge — generate and apply pixel-art cursor themes for Omarchy.
 
 Renders retro pixel-art cursor shapes (classic arrow, skeletal pointing hand,
 or a user-supplied image), recolors them with a theme or custom color, writes
-a standards-compliant XCursor theme to $XDG_DATA_HOME/icons/CursorForge, and
+a standards-compliant XCursor theme — plus a native Hyprcursor theme when
+hyprcursor-util is available — to $XDG_DATA_HOME/icons/CursorForge, and
 applies it live via `hyprctl setcursor` and GTK's gsettings.
 
 Standard library only. The optional custom-image style shells out to
-ImageMagick (`magick`) because decoding arbitrary PNGs is out of scope for a
-plugin helper.
+ImageMagick (`magick`); the optional Hyprcursor output shells out to
+`hyprcursor-util`. Both degrade gracefully when missing.
 
 Subcommands:
   apply    generate the theme, apply it, persist settings
@@ -37,6 +38,7 @@ SCALES = (1, 2, 3)       # emit nominal sizes 24, 48, 72
 VALID_SIZES = tuple(BASE * s for s in SCALES)
 STYLES = ("classic", "skeleton", "image")
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+HOTSPOT_RE = re.compile(r"^\d{1,2},\d{1,2}$")
 
 XCURSOR_IMAGE_TYPE = 0xFFFD0002
 
@@ -45,12 +47,17 @@ XCURSOR_IMAGE_TYPE = 0xFFFD0002
 #
 # Grids are strings of BASE columns. Role characters:
 #   .  transparent
-#   #  outline (fixed near-black)
+#   #  outline (near-black; warm bone-brown in the skeleton style)
 #   F  fill        H  highlight       S  shade      (derived from the color)
 #   B  bone        L  bone highlight  b  bone shade (fixed ivory tones)
-#   R  accent      (always the chosen color, even on the skeleton)
+#   d  deep shade  R  accent          (R is always the chosen color)
 # In the skeleton style F/H/S resolve to bone tones so shared shapes render
 # as bone; R is where the theme color shows through.
+#
+# Authored to the Theandril pixel-art style standard: light from the
+# upper-left, restrained highlights over deep readable shadows, selective
+# warm local-color outlines, joints drawn with the deep shade rather than
+# black gaps.
 # ---------------------------------------------------------------------------
 
 ARROW = [
@@ -107,10 +114,6 @@ HAND_CLASSIC = [
     "........................",
 ]
 
-# Authored to the Theandril pixel-art style standard: light from the
-# upper-left (L highlights lead every bone's left edge), restrained
-# highlights over deep readable shadows, and selective warm local-color
-# outlines — joints are drawn with the deep bone shade (d), not black gaps.
 HAND_SKELETON = [
     "........##..............",
     ".......#LB#.............",
@@ -165,7 +168,9 @@ TEXT_BEAM = [
     "........................",
 ]
 
-HOURGLASS = [
+# Animated hourglass: sand drains over three frames, then the loop restart
+# reads as the flip. Frame delays live in the shape table.
+HOURGLASS_FULL = [
     "........................",
     "........................",
     ".....############.......",
@@ -192,21 +197,373 @@ HOURGLASS = [
     "........................",
 ]
 
-# shape -> (grid per style, hotspot x, hotspot y) at BASE scale
+HOURGLASS_HALF = [
+    "........................",
+    "........................",
+    ".....############.......",
+    ".....#SSSSSSSSSS#.......",
+    ".....############.......",
+    "......#........#........",
+    "......#........#........",
+    ".......#FFFFFF#.........",
+    "........#FFFF#..........",
+    ".........#FF#...........",
+    ".........#FF#...........",
+    "........#.FF.#..........",
+    ".......#.FFFF.#.........",
+    "......#..FFFF..#........",
+    "......#.FFFFFF.#........",
+    "......#FFFFFFFF#........",
+    ".....############.......",
+    ".....#SSSSSSSSSS#.......",
+    ".....############.......",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+
+HOURGLASS_DRAINED = [
+    "........................",
+    "........................",
+    ".....############.......",
+    ".....#SSSSSSSSSS#.......",
+    ".....############.......",
+    "......#........#........",
+    "......#........#........",
+    ".......#......#.........",
+    "........#FFFF#..........",
+    ".........#FF#...........",
+    ".........#..#...........",
+    "........#FFFF#..........",
+    ".......#FFFFFF#.........",
+    "......#FFFFFFFF#........",
+    "......#FFFFFFFF#........",
+    "......#FFFFFFFF#........",
+    ".....############.......",
+    ".....#SSSSSSSSSS#.......",
+    ".....############.......",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+
+# Slim double-ended horizontal resize arrow; the vertical one is its
+# transpose and the diagonals mirror each other.
+RESIZE_EW = [
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    ".....#............#.....",
+    "....##............##....",
+    "...#F##############F#...",
+    "..#FFFFFFFFFFFFFFFFFF#..",
+    "...#F##############F#...",
+    "....##............##....",
+    ".....#............#.....",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+
+RESIZE_NWSE = [
+    "........................",
+    ".#####..................",
+    ".#FFF#..................",
+    ".#FF#...................",
+    ".#F#FF#.................",
+    ".##.#FF#................",
+    ".....#FF#...............",
+    "......#FF#..............",
+    ".......#FF#.............",
+    "........#FF#............",
+    ".........#FF#...........",
+    "..........#FF#..........",
+    "...........#FF#.........",
+    "............#FF#........",
+    ".............#FF#.......",
+    "..............#FF#......",
+    "...............#FF#.....",
+    "................#FF#....",
+    "................#FF#.##.",
+    ".................#FF#F#.",
+    "...................#FF#.",
+    "..................#FFF#.",
+    "..................#####.",
+    "........................",
+]
+
+# One arm of the four-way move cursor; the full fleur is this merged with
+# its transpose. The crosshair works the same way from a plain bar.
+FLEUR_ARM = [
+    "........................",
+    "..........###...........",
+    ".........#FFF#..........",
+    "........#FFFFF#.........",
+    "........###F###.........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "........###F###.........",
+    "........#FFFFF#.........",
+    ".........#FFF#..........",
+    "..........###...........",
+    "........................",
+    "........................",
+]
+
+CROSS_BAR = [
+    "........................",
+    "........................",
+    "........................",
+    "..........###...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........#F#...........",
+    "..........###...........",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+
+GRAB_HAND = [
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "....##.##.##.##.........",
+    "...#FF#FF#FF#FF#........",
+    "...#FF#FF#FF#FF#........",
+    "...#FFFFFFFFFFF#........",
+    "..##FFFFFFFFFFF#........",
+    ".#FFFFFFFFFFFFF#........",
+    ".#FFFFFFFFFFFFF#........",
+    "..#FFFFFFFFFFFF#........",
+    "...#FFFFFFFFFF#.........",
+    "...#FFFFFFFFFF#.........",
+    "....#FFFFFFFF#..........",
+    "....##########..........",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+
+GRABBING_HAND = [
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "....##.##.##.##.........",
+    "...#FF#FF#FF#FF#........",
+    "..##FF#FF#FF#FF#........",
+    ".#FFFFFFFFFFFFF#........",
+    ".#FFFFFFFFFFFFF#........",
+    "..#FFFFFFFFFFF#.........",
+    "...#FFFFFFFFF#..........",
+    "...###########..........",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+
+MINI_HOURGLASS = [
+    "########",
+    "#SSSSSS#",
+    ".#FFFF#.",
+    "..#FF#..",
+    "...##...",
+    "..#..#..",
+    ".#.FF.#.",
+    ".#FFFF#.",
+    "#SSSSSS#",
+    "########",
+]
+
+MINI_HOURGLASS_DRAINED = [
+    "########",
+    "#SSSSSS#",
+    ".#....#.",
+    "..#FF#..",
+    "...##...",
+    "..#FF#..",
+    ".#FFFF#.",
+    ".#FFFF#.",
+    "#SSSSSS#",
+    "########",
+]
+
+# The skeleton hand's accent ring glints briefly on a slow loop.
+HAND_SKELETON_GLINT = [row.replace("#RR#", "#WR#") for row in HAND_SKELETON]
+SKELETON_HAND_FRAMES = [(HAND_SKELETON, 1100), (HAND_SKELETON_GLINT, 140)]
+
+
+def mirror_grid(grid):
+    return [row[::-1] for row in grid]
+
+
+def transpose_grid(grid):
+    return ["".join(grid[x][y] for x in range(len(grid))) for y in range(len(grid))]
+
+
+def merge_grids(first, second):
+    """Cell-wise union: fill beats outline beats transparent."""
+    rank = {".": 0, "#": 1}
+    merged = []
+    for row_a, row_b in zip(first, second):
+        row = ""
+        for cell_a, cell_b in zip(row_a, row_b):
+            row += cell_a if rank.get(cell_a, 2) >= rank.get(cell_b, 2) else cell_b
+        merged.append(row)
+    return merged
+
+
+def compose_grid(base, patch, offset_x, offset_y):
+    """Stamp a smaller grid onto a copy of `base` at the given offset."""
+    rows = [list(row) for row in base]
+    for y, patch_row in enumerate(patch):
+        for x, cell in enumerate(patch_row):
+            if cell != ".":
+                rows[offset_y + y][offset_x + x] = cell
+    return ["".join(row) for row in rows]
+
+
+def make_not_allowed():
+    """Ring with a NW-SE slash, generated so the circle stays round."""
+    grid = []
+    center = (BASE - 1) / 2
+    for y in range(BASE):
+        row = ""
+        for x in range(BASE):
+            radius = ((x - center) ** 2 + (y - center) ** 2) ** 0.5
+            on_ring = 7.4 <= radius <= 9.2
+            on_slash = abs(x - y) <= 1.1 and radius <= 8.8
+            near_ring = 6.4 <= radius <= 10.2
+            near_slash = abs(x - y) <= 2.2 and radius <= 9.6
+            if on_ring or on_slash:
+                row += "F"
+            elif near_ring or near_slash:
+                row += "#"
+            else:
+                row += "."
+        grid.append(row)
+    return grid
+
+
+RESIZE_NS = transpose_grid(RESIZE_EW)
+RESIZE_NESW = mirror_grid(RESIZE_NWSE)
+MOVE_FLEUR = merge_grids(FLEUR_ARM, transpose_grid(FLEUR_ARM))
+CROSSHAIR = merge_grids(CROSS_BAR, transpose_grid(CROSS_BAR))
+NOT_ALLOWED = make_not_allowed()
+PROGRESS_ARROW = compose_grid(ARROW, MINI_HOURGLASS, 14, 12)
+PROGRESS_ARROW_DRAINED = compose_grid(ARROW, MINI_HOURGLASS_DRAINED, 14, 12)
+
+WAIT_FRAMES = [(HOURGLASS_FULL, 350), (HOURGLASS_HALF, 350),
+               (HOURGLASS_DRAINED, 550)]
+PROGRESS_FRAMES = [(PROGRESS_ARROW, 500), (PROGRESS_ARROW_DRAINED, 500)]
+
+
+def static(grid, xhot, yhot):
+    return {"frames": [(grid, 0)], "hotspot": (xhot, yhot)}
+
+
+# shape -> {style: spec}; shapes without a "skeleton" entry share the classic
+# grid, which the skeleton palette renders in bone tones.
 SHAPES = {
-    "default": {"classic": (ARROW, 1, 1), "skeleton": (HAND_SKELETON, 9, 0)},
-    "pointer": {"classic": (HAND_CLASSIC, 8, 0), "skeleton": (HAND_SKELETON, 9, 0)},
-    "text": {"classic": (TEXT_BEAM, 8, 12), "skeleton": (TEXT_BEAM, 8, 12)},
-    "wait": {"classic": (HOURGLASS, 10, 10), "skeleton": (HOURGLASS, 10, 10)},
+    "default": {"classic": static(ARROW, 1, 1),
+                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0)}},
+    "pointer": {"classic": static(HAND_CLASSIC, 8, 0),
+                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0)}},
+    "text": {"classic": static(TEXT_BEAM, 8, 12)},
+    "wait": {"classic": {"frames": WAIT_FRAMES, "hotspot": (10, 10)}},
+    "progress": {"classic": {"frames": PROGRESS_FRAMES, "hotspot": (1, 1)}},
+    "crosshair": {"classic": static(CROSSHAIR, 11, 11)},
+    "ew-resize": {"classic": static(RESIZE_EW, 11, 11)},
+    "ns-resize": {"classic": static(RESIZE_NS, 11, 11)},
+    "nwse-resize": {"classic": static(RESIZE_NWSE, 11, 11)},
+    "nesw-resize": {"classic": static(RESIZE_NESW, 12, 11)},
+    "move": {"classic": static(MOVE_FLEUR, 11, 11)},
+    "not-allowed": {"classic": static(NOT_ALLOWED, 11, 11)},
+    "grab": {"classic": static(GRAB_HAND, 9, 10)},
+    "grabbing": {"classic": static(GRABBING_HAND, 9, 11)},
 }
 
-# Every name each shape is installed under. Shapes not listed here fall back
-# to the theme named in index.theme's Inherits line.
+# Shapes that depict a right hand or right-leaning tool; these are mirrored
+# in left-handed mode. Diagonal resizes stay put — mirroring would swap them.
+HANDED_SHAPES = {"default", "pointer", "grab", "grabbing", "progress"}
+
+# Every name each shape is installed under (first entry is canonical).
+# Shapes not listed fall back to the theme named in index.theme's Inherits.
 ALIASES = {
     "default": ["default", "left_ptr", "arrow", "top_left_arrow"],
     "pointer": ["pointer", "hand1", "hand2", "pointing_hand"],
     "text": ["text", "xterm", "ibeam"],
-    "wait": ["wait", "watch", "progress", "left_ptr_watch"],
+    "wait": ["wait", "watch"],
+    "progress": ["progress", "left_ptr_watch", "half-busy"],
+    "crosshair": ["crosshair", "cross", "tcross"],
+    "ew-resize": ["ew-resize", "sb_h_double_arrow", "size_hor", "col-resize",
+                  "e-resize", "w-resize", "split_h"],
+    "ns-resize": ["ns-resize", "sb_v_double_arrow", "size_ver", "row-resize",
+                  "n-resize", "s-resize", "split_v"],
+    "nwse-resize": ["nwse-resize", "size_fdiag", "nw-resize", "se-resize",
+                    "bd_double_arrow"],
+    "nesw-resize": ["nesw-resize", "size_bdiag", "ne-resize", "sw-resize",
+                    "fd_double_arrow"],
+    "move": ["move", "fleur", "all-scroll", "size_all"],
+    "not-allowed": ["not-allowed", "crossed_circle", "forbidden", "no-drop",
+                    "dnd-no-drop"],
+    "grab": ["grab", "openhand"],
+    "grabbing": ["grabbing", "closedhand", "dnd-move", "dnd-none"],
 }
 
 OUTLINE_RGB = (18, 14, 10)
@@ -222,6 +579,15 @@ def parse_color(value):
     return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
 
 
+def parse_hotspot(value):
+    if not HOTSPOT_RE.match(value or ""):
+        raise ValueError(f"invalid hotspot {value!r}; expected x,y")
+    x, y = (int(part) for part in value.split(","))
+    if x >= BASE or y >= BASE:
+        raise ValueError(f"hotspot {value!r} outside the 0-{BASE - 1} range")
+    return x, y
+
+
 def lighten(rgb, f):
     return tuple(min(255, int(round(c + (255 - c) * f))) for c in rgb)
 
@@ -235,6 +601,7 @@ def palette(style, rgb):
     roles = {
         ".": (0, 0, 0, 0),
         "R": (*rgb, 255),
+        "W": (255, 255, 248, 255),
         "B": (*BONE["B"], 255),
         "L": (*BONE["L"], 255),
         "b": (*BONE["b"], 255),
@@ -290,8 +657,9 @@ def scale_pixels(pixels, width, height, factor):
 # ---------------------------------------------------------------------------
 
 def xcursor_bytes(images):
-    """images: list of (nominal, w, h, xhot, yhot, rgba_pixels). -> file bytes.
+    """images: (nominal, w, h, xhot, yhot, delay_ms, rgba_pixels) list.
 
+    Multiple entries under the same nominal size are animation frames.
     Pixels are stored premultiplied ARGB little-endian, as libXcursor expects.
     """
     ntoc = len(images)
@@ -299,9 +667,9 @@ def xcursor_bytes(images):
     toc = b""
     chunks = b""
     position = header_size
-    for nominal, w, h, xhot, yhot, pixels in images:
+    for nominal, w, h, xhot, yhot, delay, pixels in images:
         body = bytearray(struct.pack("<9I", 36, XCURSOR_IMAGE_TYPE, nominal, 1,
-                                     w, h, xhot, yhot, 0))
+                                     w, h, xhot, yhot, delay))
         for r, g, b, a in pixels:
             body += struct.pack("<I", (a << 24)
                                 | ((r * a // 255) << 16)
@@ -388,8 +756,94 @@ def config_path():
     return base / "cursorforge" / "settings.json"
 
 
-def build_theme(out_dir, style, rgb, image_path=None):
-    """Write the full XCursor theme + previews. Returns the theme directory."""
+def shape_spec(shape, grid_style, left_handed, animated=True):
+    variants = SHAPES[shape]
+    spec = variants.get(grid_style) or variants["classic"]
+    frames = spec["frames"]
+    xhot, yhot = spec["hotspot"]
+    if not animated:
+        frames = [(frames[0][0], 0)]
+    if left_handed and shape in HANDED_SHAPES:
+        frames = [(mirror_grid(grid), delay) for grid, delay in frames]
+        xhot = BASE - 1 - xhot
+    return frames, xhot, yhot
+
+
+def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
+                 animated=True):
+    """Resolve one shape to [(nominal, w, h, xhot, yhot, delay, pixels)]."""
+    grid_style = "skeleton" if style == "skeleton" else "classic"
+    if style == "image" and shape in ("default", "pointer"):
+        hx, hy = image_hotspot
+        return [(BASE * f, BASE * f, BASE * f, hx * f, hy * f, 0,
+                 load_image_pixels(image_path, BASE * f)) for f in SCALES]
+    frames, xhot, yhot = shape_spec(shape, grid_style, left_handed, animated)
+    images = []
+    for factor in SCALES:
+        for grid, delay in frames:
+            images.append((BASE * factor, BASE * factor, BASE * factor,
+                           xhot * factor, yhot * factor, delay,
+                           scale_pixels(render_grid(grid, roles),
+                                        BASE, BASE, factor)))
+    return images
+
+
+def build_hyprcursor(theme_dir, shapes_images):
+    """Compile a native Hyprcursor theme into theme_dir, when possible.
+
+    Hyprland prefers Hyprcursor and falls back to the XCursor files
+    otherwise, so any failure here is a warning rather than an error.
+    """
+    util = shutil.which("hyprcursor-util")
+    if not util:
+        return []
+    with tempfile.TemporaryDirectory(prefix="cursorforge-hc-") as tmp:
+        work = Path(tmp) / "work"
+        out = Path(tmp) / "out"
+        work.mkdir()
+        out.mkdir()
+        (work / "manifest.hl").write_text(
+            f"name = {THEME_NAME}\n"
+            "description = Pixel-art cursor theme generated by Cursor Forge\n"
+            "version = 1.0\n"
+            "cursors_directory = hyprcursors\n")
+        for shape, images in shapes_images.items():
+            names = ALIASES[shape]
+            shape_dir = work / "hyprcursors" / names[0]
+            shape_dir.mkdir(parents=True)
+            meta = ["resize_algorithm = nearest"]
+            first = images[0]
+            meta.append(f"hotspot_x = {first[3] / first[1]:.4f}")
+            meta.append(f"hotspot_y = {first[4] / first[2]:.4f}")
+            for alias in names[1:]:
+                meta.append(f"define_override = {alias}")
+            for index, (nominal, w, h, _x, _y, delay, pixels) in enumerate(images):
+                file_name = f"{nominal}_{index}.png"
+                (shape_dir / file_name).write_bytes(png_bytes(pixels, w, h))
+                if delay > 0:
+                    meta.append(f"define_size = {nominal}, {file_name}, {delay}")
+                else:
+                    meta.append(f"define_size = {nominal}, {file_name}")
+            (shape_dir / "meta.hl").write_text("\n".join(meta) + "\n")
+        result = subprocess.run(
+            [util, "--create", str(work), "--output", str(out)],
+            capture_output=True, timeout=60)
+        compiled = out / f"theme_{THEME_NAME}"
+        if result.returncode != 0 or not (compiled / "manifest.hl").is_file():
+            detail = (result.stderr or result.stdout).decode(errors="replace")
+            return [f"hyprcursor-util failed; XCursor fallback stays active: "
+                    f"{detail.strip()[:200]}"]
+        target = Path(theme_dir) / "hyprcursors"
+        if target.exists():
+            shutil.rmtree(target)
+        shutil.copytree(compiled / "hyprcursors", target)
+        shutil.copy2(compiled / "manifest.hl", Path(theme_dir) / "manifest.hl")
+    return []
+
+
+def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
+                image_hotspot=(0, 0), animated=True):
+    """Write the full cursor theme + previews. Returns (dir, warnings)."""
     theme_dir = Path(out_dir) / THEME_NAME
     cursors_dir = theme_dir / "cursors"
     cursors_dir.mkdir(parents=True, exist_ok=True)
@@ -397,26 +851,14 @@ def build_theme(out_dir, style, rgb, image_path=None):
     grid_style = "skeleton" if style == "skeleton" else "classic"
     roles = palette(grid_style, rgb)
 
-    image_base = None
-    if style == "image":
-        if not image_path or not Path(image_path).is_file():
-            raise RuntimeError(f"image file not found: {image_path!r}")
+    if style == "image" and (not image_path or not Path(image_path).is_file()):
+        raise RuntimeError(f"image file not found: {image_path!r}")
 
-    for shape, variants in SHAPES.items():
-        grid, xhot, yhot = variants[grid_style]
-        base_pixels = render_grid(grid, roles)
-        if style == "image" and shape in ("default", "pointer"):
-            images = []
-            for factor in SCALES:
-                size = BASE * factor
-                images.append((size, size, size, 0, 0,
-                               load_image_pixels(image_path, size)))
-            if shape == "default":
-                image_base = images[0][5]
-        else:
-            images = [(BASE * f, BASE * f, BASE * f, xhot * f, yhot * f,
-                       scale_pixels(base_pixels, BASE, BASE, f))
-                      for f in SCALES]
+    shapes_images = {}
+    for shape in SHAPES:
+        images = shape_images(shape, style, roles, left_handed,
+                              image_path, image_hotspot, animated)
+        shapes_images[shape] = images
         data = xcursor_bytes(images)
         for name in ALIASES[shape]:
             atomic_write(cursors_dir / name, data)
@@ -427,20 +869,38 @@ def build_theme(out_dir, style, rgb, image_path=None):
                   "Comment=Pixel-art cursor theme generated by Cursor Forge\n"
                   "Inherits=Adwaita\n").encode())
 
-    # Previews for the shell UI: both styles at the current color, plus the
-    # active style as current.png (the bar widget's icon).
+    warnings = build_hyprcursor(theme_dir, shapes_images)
+
+    # Previews for the shell UI: both styles at the current color, the active
+    # style as current.png (the bar widget's icon), and a one-row gallery of
+    # every shape for the panel.
     previews = theme_dir / "previews"
     for preview_style, grid in (("classic", ARROW), ("skeleton", HAND_SKELETON)):
-        pixels = render_grid(grid, palette(preview_style, rgb))
+        style_roles = palette(preview_style, rgb)
+        source = mirror_grid(grid) if left_handed else grid
         atomic_write(previews / f"{preview_style}.png",
-                     png_bytes(pixels, BASE, BASE))
-    if style == "image":
-        current = image_base
-    else:
-        grid, _, _ = SHAPES["default"][grid_style]
-        current = render_grid(grid, roles)
+                     png_bytes(render_grid(source, style_roles), BASE, BASE))
+    current = shapes_images["default"][0][6]
     atomic_write(previews / "current.png", png_bytes(current, BASE, BASE))
-    return theme_dir
+    atomic_write(previews / "shapes.png", shape_gallery_png(shapes_images))
+    return theme_dir, warnings
+
+
+def shape_gallery_png(shapes_images, gap=2):
+    """One row of every shape's first frame at native size, transparent bg."""
+    order = list(SHAPES)
+    width = len(order) * BASE + (len(order) + 1) * gap
+    height = BASE + 2 * gap
+    canvas = [(0, 0, 0, 0)] * (width * height)
+    for index, shape in enumerate(order):
+        pixels = shapes_images[shape][0][6]
+        ox = gap + index * (BASE + gap)
+        for y in range(BASE):
+            for x in range(BASE):
+                pixel = pixels[y * BASE + x]
+                if pixel[3] > 0:
+                    canvas[(gap + y) * width + ox + x] = pixel
+    return png_bytes(canvas, width, height)
 
 
 # ---------------------------------------------------------------------------
@@ -510,7 +970,7 @@ def load_settings():
 
 def save_settings(settings):
     allowed = ("style", "colorMode", "customColor", "size", "imagePath",
-               "active", "restore")
+               "imageHotspot", "leftHanded", "animated", "active", "restore")
     clean = {key: settings[key] for key in allowed if key in settings}
     atomic_write(config_path(),
                  (json.dumps(clean, indent=2) + "\n").encode())
@@ -522,20 +982,22 @@ def save_settings(settings):
 
 def cmd_apply(args):
     rgb = parse_color(args.color)
+    image_hotspot = parse_hotspot(args.image_hotspot)
     if args.size not in VALID_SIZES:
         raise ValueError(f"size must be one of {VALID_SIZES}")
-    theme_dir = build_theme(args.out or data_home() / "icons",
-                            args.style, rgb, args.image)
+    theme_dir, warnings = build_theme(
+        args.out or data_home() / "icons", args.style, rgb, args.image,
+        left_handed=args.left_handed, image_hotspot=image_hotspot,
+        animated=not args.no_animation)
 
     settings = load_settings()
-    warnings = []
     if not args.no_apply:
         if "restore" not in settings:
             prev_theme, prev_size = read_gtk_cursor()
             if prev_theme and prev_theme != THEME_NAME:
                 settings["restore"] = {"theme": prev_theme,
                                        "size": prev_size or 24}
-        warnings = apply_cursor(THEME_NAME, args.size)
+        warnings += apply_cursor(THEME_NAME, args.size)
 
     if not args.no_save:
         settings.update({
@@ -544,6 +1006,9 @@ def cmd_apply(args):
             "customColor": args.custom_color or args.color,
             "size": args.size,
             "imagePath": args.image or "",
+            "imageHotspot": args.image_hotspot,
+            "leftHanded": bool(args.left_handed),
+            "animated": not args.no_animation,
             "active": not args.no_apply,
         })
         save_settings(settings)
@@ -582,8 +1047,9 @@ def cmd_preview(args):
     background = (40, 40, 48, 255) if args.dark else (200, 200, 200, 255)
     canvas = [background] * (width * height)
     for index, shape in enumerate(shapes):
-        grid, _, _ = SHAPES[shape][grid_style]
-        pixels = scale_pixels(render_grid(grid, roles), BASE, BASE, factor)
+        frames, _, _ = shape_spec(shape, grid_style, False)
+        pixels = scale_pixels(render_grid(frames[0][0], roles),
+                              BASE, BASE, factor)
         ox = gap + index * (tile + gap)
         for y in range(tile):
             for x in range(tile):
@@ -591,7 +1057,7 @@ def cmd_preview(args):
                 if pixel[3] > 0:
                     canvas[(gap + y) * width + ox + x] = pixel
     atomic_write(args.out, png_bytes(canvas, width, height))
-    return {"ok": True, "out": args.out}
+    return {"ok": True, "out": args.out, "shapes": shapes}
 
 
 def main(argv=None):
@@ -609,6 +1075,12 @@ def main(argv=None):
     apply_p.add_argument("--size", type=int, default=BASE)
     apply_p.add_argument("--image", default="",
                          help="image file for the image style")
+    apply_p.add_argument("--image-hotspot", default="0,0",
+                         help="hotspot x,y on the 24px grid for the image style")
+    apply_p.add_argument("--left-handed", action="store_true",
+                         help="mirror the hand and arrow shapes")
+    apply_p.add_argument("--no-animation", action="store_true",
+                         help="build every shape as a single static frame")
     apply_p.add_argument("--out", default="",
                          help="icons directory override (for tests)")
     apply_p.add_argument("--no-apply", action="store_true")

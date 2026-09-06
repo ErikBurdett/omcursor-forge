@@ -61,8 +61,8 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(300))
-    contentHeight: panel.fittedContentHeight(content.implicitHeight, Style.space(560))
+    contentWidth: panel.fittedContentWidth(Style.space(380))
+    contentHeight: panel.fittedContentHeight(content.implicitHeight, Style.space(640))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -328,6 +328,64 @@ Panel {
               fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
               onClicked: if (root.service) root.service.setCursorSize(modelData)
             }
+          }
+        }
+
+        Row {
+          spacing: Style.space(8)
+
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Left-handed"
+            color: root.barForeground
+            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+            font.pixelSize: Style.font.bodySmall
+          }
+
+          ToggleSwitch {
+            anchors.verticalCenter: parent.verticalCenter
+            checked: root.service ? root.service.leftHanded === true : false
+            onToggled: if (root.service) root.service.setLeftHanded(!root.service.leftHanded)
+          }
+
+          Item { width: Style.space(10); height: 1 }
+
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Animated"
+            color: root.barForeground
+            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+            font.pixelSize: Style.font.bodySmall
+          }
+
+          ToggleSwitch {
+            anchors.verticalCenter: parent.verticalCenter
+            checked: root.service ? root.service.animated === true : true
+            onToggled: if (root.service) root.service.setAnimated(!root.service.animated)
+          }
+        }
+
+        PanelSectionHeader { text: "Every shape" }
+
+        Image {
+          id: galleryImage
+          width: Math.min(implicitWidth, parent.width)
+          fillMode: Image.PreserveAspectFit
+          smooth: false
+          cache: false
+          visible: status === Image.Ready
+
+          function refresh() {
+            source = ""
+            if (root.previewDir !== "")
+              source = "file://" + root.previewDir + "/shapes.png"
+          }
+
+          Component.onCompleted: refresh()
+
+          Connections {
+            target: root
+            function onPreviewTickChanged() { galleryImage.refresh() }
           }
         }
 
