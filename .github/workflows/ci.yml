@@ -28,5 +28,5 @@ jobs:
         run: |
           python3 cursorgen.py apply --style lich --color '#6b8a69' \
             --out /tmp/icons --no-apply --no-save
-          test -f /tmp/icons/CursorForge/cursors/default
-          test -f /tmp/icons/CursorForge/index.theme
+          test -f /tmp/icons/OmCursorForge/cursors/default
+          test -f /tmp/icons/OmCursorForge/index.theme
