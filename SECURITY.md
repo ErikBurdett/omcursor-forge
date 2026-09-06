@@ -21,7 +21,7 @@ OmCursor Forge is designed to have a small, auditable surface:
   rename.
 - **Bounded external commands.** It executes only `hyprctl setcursor`,
   `gsettings set org.gnome.desktop.interface …`, and optionally `magick`
-  (custom-image style) and `hyprcursor-util` (Hyprcursor output), all
+  (custom-image style), all
   resolved with `shutil.which`, with timeouts, and never through a shell.
 - **Consent model.** Nothing changes until the user's first explicit apply;
   the prior cursor theme is recorded then and can always be restored.
@@ -48,7 +48,8 @@ What it does, exactly:
 ## Notes for marketplace reviewers
 
 - The automated baseline may flag the `installer` capability for
-  `install-click-ripple` / `uninstall-click-ripple`. The plugin never runs
+  `install-click-ripple` / `uninstall-click-ripple` /
+  `fix-fractional-cursor`. The plugin never runs
   them itself; they are user-invoked, back up the file they edit, refuse
   to double-install, and are fully reversible.
 - `CONTRIBUTING.md` contains `git clone` commands for developing this

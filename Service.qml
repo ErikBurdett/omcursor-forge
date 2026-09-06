@@ -11,7 +11,7 @@ Item {
   property var shell: null
   property var manifest: null
   readonly property string pluginId: "io.github.erikburdett.cursorforge"
-  readonly property var styles: ["classic", "lich", "sword", "wand", "image"]
+  readonly property var styles: ["classic", "lich", "sword", "wand", "modern", "d20", "terminal", "image"]
   readonly property var sizes: [24, 48, 72, 96]
 
   // Mirrors ~/.config/cursorforge/settings.json. `active` means the user has
@@ -23,6 +23,7 @@ Item {
   property string customColor: "#7aa2f7"
   property string imagePath: ""
   property string imageHotspot: "0,0"
+  property bool imageTint: false
   property int cursorSize: 24
   property bool leftHanded: false
   property bool animated: true
@@ -79,6 +80,9 @@ Item {
     if (name === "lich") return "Lich sleeve"
     if (name === "sword") return "Sword"
     if (name === "wand") return "Wand"
+    if (name === "modern") return "Modern"
+    if (name === "d20") return "D20"
+    if (name === "terminal") return "Terminal"
     if (name === "image") return "Custom image"
     return "Classic arrow"
   }
@@ -181,6 +185,12 @@ Item {
     return true
   }
 
+  function setImageTint(enabled) {
+    imageTint = enabled === true
+    if (style === "image") requestApply()
+    return true
+  }
+
   // A real apply: the user asked for this cursor. Debounced so a theme
   // switch or a fast series of clicks runs the generator once.
   function requestApply() {
@@ -204,8 +214,10 @@ Item {
       "--style", style, "--color", effectiveColor,
       "--color-mode", colorMode, "--custom-color", customColor,
       "--size", String(cursorSize)]
-    if (style === "image") argv.push("--image", imagePath,
-      "--image-hotspot", imageHotspot)
+    if (style === "image") {
+      argv.push("--image", imagePath, "--image-hotspot", imageHotspot)
+      if (imageTint) argv.push("--image-tint")
+    }
     if (leftHanded) argv.push("--left-handed")
     if (!animated) argv.push("--no-animation")
     if (!motion) argv.push("--no-motion")
@@ -285,6 +297,7 @@ Item {
     var nextImage = typeof parsed.imagePath === "string" ? parsed.imagePath : imagePath
     var nextHotspot = /^\d{1,2},\d{1,2}$/.test(String(parsed.imageHotspot))
       ? String(parsed.imageHotspot) : imageHotspot
+    var nextImageTint = parsed.imageTint === true
     var nextSize = sizes.indexOf(Number(parsed.size)) >= 0
       ? Number(parsed.size) : cursorSize
     var nextLeftHanded = parsed.leftHanded === true
@@ -298,7 +311,8 @@ Item {
     var nextActive = parsed.active === true
     var changed = nextStyle !== style || nextMode !== colorMode
       || nextColor !== customColor || nextImage !== imagePath
-      || nextHotspot !== imageHotspot || nextSize !== cursorSize
+      || nextHotspot !== imageHotspot || nextImageTint !== imageTint
+      || nextSize !== cursorSize
       || nextLeftHanded !== leftHanded || nextAnimated !== animated
       || nextMotion !== motion || nextSpeed !== speed
       || nextRippleShape !== rippleShape
@@ -309,6 +323,7 @@ Item {
     customColor = nextColor
     imagePath = nextImage
     imageHotspot = nextHotspot
+    imageTint = nextImageTint
     cursorSize = nextSize
     leftHanded = nextLeftHanded
     animated = nextAnimated
@@ -392,6 +407,7 @@ Item {
         effectiveColor: root.effectiveColor,
         imagePath: root.imagePath,
         imageHotspot: root.imageHotspot,
+        imageTint: root.imageTint,
         size: root.cursorSize,
         leftHanded: root.leftHanded,
         animated: root.animated,
@@ -426,6 +442,11 @@ Item {
 
     function setImageHotspot(spot: string): string {
       return root.setImageHotspot(spot) ? "ok" : "expected x,y within 0-23"
+    }
+
+    function toggleImageTint(): string {
+      root.setImageTint(!root.imageTint)
+      return root.imageTint ? "tinted" : "original"
     }
 
     function toggleLeftHanded(): string {

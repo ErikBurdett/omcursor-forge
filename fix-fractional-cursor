@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Fixes cropped/cut-off cursors on fractionally scaled monitors (e.g. 1.25x)
+# by disabling hardware cursor planes, which mis-crop scaled cursor buffers
+# on some driver stacks. Applies immediately and persists via a clearly
+# marked block in ~/.config/hypr/looknfeel.lua (backed up first).
+# Run with `remove` to undo:  ./fix-fractional-cursor remove
+set -euo pipefail
+
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/looknfeel.lua"
+MARKER="omcursor-forge-fractional-fix"
+
+[[ -f "$CONFIG" ]] || { echo "error: $CONFIG not found" >&2; exit 1; }
+
+if [[ "${1:-}" == "remove" ]]; then
+  if ! grep -q "$MARKER" "$CONFIG"; then
+    echo "fractional cursor fix is not installed"
+    exit 0
+  fi
+  cp "$CONFIG" "$CONFIG.bak.$(date +%s)"
+  sed -i "/-- BEGIN $MARKER/,/-- END $MARKER/d" "$CONFIG"
+  hyprctl keyword cursor:no_hardware_cursors 2 >/dev/null || true
+  echo "removed — hardware cursors restored to auto"
+  exit 0
+fi
+
+hyprctl keyword cursor:no_hardware_cursors 1 >/dev/null || true
+
+if grep -q "$MARKER" "$CONFIG"; then
+  echo "already installed (and re-applied for this session)"
+  exit 0
+fi
+
+cp "$CONFIG" "$CONFIG.bak.$(date +%s)"
+cat >> "$CONFIG" <<'EOF'
+
+-- BEGIN omcursor-forge-fractional-fix (remove with fix-fractional-cursor remove)
+-- Software cursors: hardware cursor planes crop scaled cursor buffers on
+-- fractionally scaled monitors with some drivers.
+hl.config({ cursor = { no_hardware_cursors = 1 } })
+-- END omcursor-forge-fractional-fix
+EOF
+
+echo "installed — software cursors active now and after reloads."

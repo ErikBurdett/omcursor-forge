@@ -139,7 +139,8 @@ Panel {
 
         PanelSectionHeader { text: "Style" }
 
-        Row {
+        Flow {
+          width: parent.width
           spacing: Style.space(8)
 
           Repeater {
@@ -148,6 +149,9 @@ Panel {
               { key: "lich", label: "Lich" },
               { key: "sword", label: "Sword" },
               { key: "wand", label: "Wand" },
+              { key: "modern", label: "Modern" },
+              { key: "d20", label: "D20" },
+              { key: "terminal", label: "Terminal" },
               { key: "image", label: "Image" }
             ]
 
@@ -235,6 +239,24 @@ Panel {
             foreground: root.barForeground
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             onAccepted: if (root.service) root.service.setImagePath(text)
+          }
+
+          Row {
+            spacing: Style.space(4)
+
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Tint with cursor color"
+              color: root.barForeground
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.bodySmall
+            }
+
+            ToggleSwitch {
+              anchors.verticalCenter: parent.verticalCenter
+              checked: root.service ? root.service.imageTint === true : false
+              onToggled: if (root.service) root.service.setImageTint(!root.service.imageTint)
+            }
           }
 
           Text {

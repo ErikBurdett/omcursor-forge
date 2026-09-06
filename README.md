@@ -26,6 +26,9 @@ Hyprland and GTK apps.
 - **Sword and Wand styles**: a theme-colored blade with a bone crossguard,
   and a wood wand with a sparkling accent star — because your cursor can be
   a fantasy artifact too.
+- **Nerd styles**: a **Modern** sleek arrow (white border, theme-colored
+  fill, anti-aliased edges, deliberately still), a **D20** with a real 20
+  on its face, and a **Terminal** prompt whose block caret blinks.
 - **Fourteen shapes**, one family: arrow, hand, text beam, wait, progress,
   crosshair, all four resize arrows, move, not-allowed, grab, and grabbing —
   with their common alias names, so apps rarely fall back to another theme.
@@ -40,10 +43,11 @@ Hyprland and GTK apps.
 - **Left-handed mode**: mirrors the hand and arrow shapes and their
   hotspots.
 - **Custom image style**: point it at any image file and it becomes your
-  cursor, with a configurable hotspot (requires ImageMagick).
-- **Animation-correct output**: animated builds ship pure XCursor (the
-  only lane Hyprland animates); fully static builds also get a native
-  Hyprcursor compilation when `hyprcursor-util` is installed.
+  cursor, with a configurable hotspot and an optional theme tint that
+  colorizes the image toward your accent (requires ImageMagick).
+- **One verified rendering lane**: pure XCursor output, byte-verified
+  complete at every size (24/48/72/96) — no second format to disagree
+  about scaling.
 - **Sizes** 24, 48, 72, and 96 px, pixel-perfect integer scales.
 - **File-driven**: everything is stored in
   `~/.config/cursorforge/settings.json`. Edit it by hand and the change
@@ -73,7 +77,7 @@ can be restored.
   Changes apply immediately.
 - **Scroll** on the bar widget to cycle styles.
 - **Edit the file**: `~/.config/cursorforge/settings.json` is watched;
-  hand edits apply live. Keys: `style` (`classic` | `lich` | `sword` | `wand` | `image`),
+  hand edits apply live. Keys: `style` (`classic` | `lich` | `sword` | `wand` | `modern` | `d20` | `terminal` | `image`),
   `colorMode` (`theme` | `custom`), `customColor`, `size` (24/48/72/96),
   `imagePath`, `imageHotspot` (`"x,y"` on the 24px grid), `leftHanded`,
   `animated`, `motion`, `speed` (`calm` | `normal` | `lively`),
@@ -95,6 +99,7 @@ can be restored.
   omarchy-shell io.github.erikburdett.cursorforge toggleClickRipple
   omarchy-shell io.github.erikburdett.cursorforge setImage /path/to/img.png
   omarchy-shell io.github.erikburdett.cursorforge setImageHotspot "3,1"
+  omarchy-shell io.github.erikburdett.cursorforge toggleImageTint
   omarchy-shell io.github.erikburdett.cursorforge reset
   ```
 
@@ -105,11 +110,9 @@ recolors them, and writes a standards-compliant XCursor theme to
 `~/.local/share/icons/OmCursorForge` — fourteen shapes with their common
 aliases, at 24/48/72/96 px with premultiplied alpha, correct hotspots, and
 multi-frame animation where a shape animates. Anything else inherits from
-Adwaita. Animated builds deliberately skip Hyprcursor output — Hyprland
-only animates the XCursor lane when no Hyprcursor theme is present — while
-fully static builds also get a native Hyprcursor compilation when
-`hyprcursor-util` is installed. It applies the theme with `hyprctl
-setcursor` and GTK's
+Adwaita. Only XCursor output ships — it is the lane Hyprland animates and
+the one this project byte-verifies at every size. It applies the theme
+with `hyprctl setcursor` and GTK's
 `org.gnome.desktop.interface cursor-theme`/`cursor-size` settings, and the
 service re-asserts it when the shell starts, so it survives logins without
 touching any Hyprland or GTK config files.
@@ -118,11 +121,19 @@ touching any Hyprland or GTK config files.
 
 - `python3` (required; part of a stock Omarchy install)
 - `hyprctl` and `gsettings` (used when present; part of a stock install)
-- `hyprcursor-util` (optional; enables the native Hyprcursor output, present
-  on stock Omarchy)
 - ImageMagick `magick` (optional; only for the custom image style)
 
 Nothing is downloaded or installed by the plugin at any point.
+
+## Troubleshooting
+
+**Cursor looks cropped / cut off?** Fractionally scaled monitors (for
+example 1.25x) plus hardware cursor planes crop scaled cursor buffers on
+some driver stacks. Run `./fix-fractional-cursor` from the plugin folder —
+it switches Hyprland to software cursors immediately and persists that via
+a clearly marked, backed-up block in `~/.config/hypr/looknfeel.lua`
+(`./fix-fractional-cursor remove` undoes it). OmCursor Forge also warns in
+the panel when it detects this combination.
 
 ## Removal
 

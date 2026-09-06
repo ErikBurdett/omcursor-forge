@@ -4,6 +4,32 @@ All notable changes to OmCursor Forge (formerly Cursor Forge) are documented her
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - 2026-09-06
+
+### Added
+
+- Three nerd styles: **Modern** (sleek white-bordered arrow with
+  anti-aliased edges and theme-colored fill — deliberately static),
+  **D20** (geometric twenty-sider with a real 20 on its face, glints and
+  bobs), and **Terminal** (prompt chevron with a blinking block caret).
+- **Theme tint for custom images**: a panel toggle (and `toggleImageTint`
+  IPC / `imageTint` setting) colorizes any custom cursor image toward the
+  active cursor color by luminance, so image cursors can follow the theme
+  too.
+- `fix-fractional-cursor`: one command that fixes cropped cursors on
+  fractionally scaled monitors (switches Hyprland to software cursors,
+  persisted via a marked, backed-up config block; `remove` undoes it).
+  Applies detect the fractional-scale + hardware-cursor combination and
+  point at the fix.
+
+### Changed
+
+- **Single rendering lane.** Hyprcursor output is gone entirely; only the
+  byte-verified XCursor theme ships. Two format lanes meant two scaling
+  behaviors that could disagree — the cut-off-at-24px report traced to
+  size handling outside the XCursor path.
+- Theme builds now hold an exclusive lock (carried from 2.1.0's QA).
+
 ## [2.1.0] - 2026-09-06
 
 ### Changed

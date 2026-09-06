@@ -39,6 +39,11 @@ ALL_GRIDS = {
     "SWORD_GLINT": cursorgen.SWORD_GLINT,
     "WAND": cursorgen.WAND,
     "WAND_GLINT": cursorgen.WAND_GLINT,
+    "MODERN": cursorgen.MODERN,
+    "D20": cursorgen.D20,
+    "D20_GLINT": cursorgen.D20_GLINT,
+    "TERMINAL_ON": cursorgen.TERMINAL_ON,
+    "TERMINAL_OFF": cursorgen.TERMINAL_OFF,
 }
 
 
@@ -293,7 +298,8 @@ def test_transparent_pixels_are_fully_zero(tmp_path):
 
 def test_previews_are_valid_pngs(tmp_path):
     theme = build(tmp_path, "classic")
-    for name in ("current.png", "classic.png", "lich.png",
+    for name in ("current.png", "classic.png", "lich.png", "modern.png",
+                 "d20.png", "terminal.png",
                  "sword.png", "wand.png", "shapes.png", "ripple_0.png",
                  "ripple_3.png"):
         data = (theme / "previews" / name).read_bytes()
@@ -307,19 +313,16 @@ def test_previews_are_valid_pngs(tmp_path):
             assert width == height == cursorgen.BASE
 
 
-def test_hyprcursor_only_ships_for_static_themes(tmp_path):
-    """Hyprland only animates the XCursor lane when no hyprcursor theme is
-    loaded, so an animated build must never ship hyprcursor files — and must
-    scrub stale ones left by an earlier static build."""
-    import shutil as shutil_module
-    static_theme = build(tmp_path, "lich", extra=("--no-animation",))
-    has_util = shutil_module.which("hyprcursor-util") is not None
-    assert (static_theme / "manifest.hl").is_file() == has_util
-
-    animated_theme = build(tmp_path, "lich")
-    assert animated_theme == static_theme
-    assert not (animated_theme / "manifest.hl").exists()
-    assert not (animated_theme / "hyprcursors").exists()
+def test_no_hyprcursor_files_ever(tmp_path):
+    """Single rendering lane by design: only XCursor ships (the Hyprcursor
+    lane was removed after size/scale mis-rendering), and stale files from
+    old builds are scrubbed."""
+    theme = build(tmp_path, "lich", extra=("--no-animation",))
+    (theme / "manifest.hl").write_text("stale")
+    (theme / "hyprcursors").mkdir()
+    theme = build(tmp_path, "lich")
+    assert not (theme / "manifest.hl").exists()
+    assert not (theme / "hyprcursors").exists()
 
 
 def test_no_save_leaves_config_untouched(tmp_path, monkeypatch):
@@ -333,6 +336,7 @@ def test_settings_roundtrip_whitelists_keys(tmp_path, monkeypatch):
     cursorgen.save_settings({
         "style": "lich", "colorMode": "theme", "customColor": "#123456",
         "size": 24, "imagePath": "", "imageHotspot": "0,0",
+        "imageTint": True,
         "leftHanded": False, "animated": True, "motion": False,
         "speed": "lively", "rippleShape": "burst", "clickRipple": True,
         "active": True,
@@ -344,6 +348,7 @@ def test_settings_roundtrip_whitelists_keys(tmp_path, monkeypatch):
     assert loaded["active"] is True and loaded["animated"] is True
     assert loaded["motion"] is False and loaded["speed"] == "lively"
     assert loaded["rippleShape"] == "burst"
+    assert loaded["imageTint"] is True
     assert "junk" not in loaded
     raw = json.loads(cursorgen.config_path().read_text())
     assert raw == loaded
@@ -367,6 +372,32 @@ def test_grid_helpers():
     stamped = cursorgen.compose_grid(["....", "....", "....", "...."],
                                      ["FF", "FF"], 1, 2)
     assert stamped[2] == ".FF." and stamped[3] == ".FF."
+
+
+def test_tint_pixels_colorizes_by_luminance():
+    rgb = (210, 164, 20)
+    tinted = cursorgen.tint_pixels(
+        [(255, 255, 255, 255), (0, 0, 0, 255), (128, 128, 128, 60)], rgb)
+    assert tinted[0] == (210, 164, 20, 255)     # white -> full accent
+    assert tinted[1] == (0, 0, 0, 255)          # black stays black
+    assert tinted[2][3] == 60                   # alpha preserved
+    assert 0 < tinted[2][0] < 210
+
+
+def test_modern_style_is_static_and_antialiased(tmp_path):
+    frames, xhot, yhot = cursorgen.shape_spec("default", "modern", False)
+    assert len(frames) == 1 and frames[0][1] == 0
+    assert (xhot, yhot) == (2, 1)
+    roles = cursorgen.palette("classic", (210, 164, 20))
+    pixels = cursorgen.render_grid(cursorgen.MODERN, roles)
+    alphas = {a for _, _, _, a in pixels}
+    assert 96 in alphas and 255 in alphas  # AA edge + solid pixels
+
+
+def test_terminal_caret_blinks():
+    frames, _, _ = cursorgen.shape_spec("default", "terminal", False)
+    assert len(frames) == 2
+    assert frames[0][0] != frames[1][0]
 
 
 def test_missing_image_fails_cleanly(tmp_path, capsys):

@@ -8,8 +8,7 @@ hyprcursor-util is available — to $XDG_DATA_HOME/icons/CursorForge, and
 applies it live via `hyprctl setcursor` and GTK's gsettings.
 
 Standard library only. The optional custom-image style shells out to
-ImageMagick (`magick`); the optional Hyprcursor output shells out to
-`hyprcursor-util`. Both degrade gracefully when missing.
+ImageMagick (`magick`), which degrades gracefully when missing.
 
 Subcommands:
   apply    generate the theme, apply it, persist settings
@@ -37,8 +36,8 @@ BASE = 24                # art is drawn on a 24x24 grid
 SCALES = (1, 2, 3, 4)    # emit nominal sizes 24, 48, 72, 96 (96 for HiDPI:
                          # Hyprland requests size x ceil(scale) from libXcursor)
 VALID_SIZES = tuple(BASE * s for s in SCALES)
-STYLES = ("classic", "lich", "sword", "wand", "image")
-ART_STYLES = ("classic", "lich", "sword", "wand")
+STYLES = ("classic", "lich", "sword", "wand", "modern", "d20", "terminal", "image")
+ART_STYLES = ("classic", "lich", "sword", "wand", "modern", "d20", "terminal")
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 HOTSPOT_RE = re.compile(r"^\d{1,2},\d{1,2}$")
 
@@ -703,6 +702,128 @@ NOT_ALLOWED = make_not_allowed()
 PROGRESS_ARROW = compose_grid(ARROW, MINI_HOURGLASS, 14, 12)
 PROGRESS_ARROW_DRAINED = compose_grid(ARROW, MINI_HOURGLASS_DRAINED, 14, 12)
 
+# A modern, less-retro arrow: sleek narrow silhouette, crisp white border,
+# theme-colored fill, and half-alpha edge pixels standing in for
+# anti-aliasing. Deliberately static — modern cursors keep still.
+MODERN = [
+    "........................",
+    "..O.....................",
+    "..OOo...................",
+    "..OFOo..................",
+    "..OFFOo.................",
+    "..OFFFOo................",
+    "..OFFFFOo...............",
+    "..OFFFFFOo..............",
+    "..OFFFFFFOo.............",
+    "..OFFFFFFFOo............",
+    "..OFFFFFFFFOo...........",
+    "..OFFFFFFFFFOo..........",
+    "..OFFFFFOOOOOOo.........",
+    "..OFFOFFOo..............",
+    "..OFOooOFFOo............",
+    "..OOo...oOFFOo..........",
+    "..Oo.....oOFFOo.........",
+    "..........oOFOo.........",
+    "...........oOOo.........",
+    "............oOo.........",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+
+
+def make_d20():
+    """A twenty-sided die: hexagonal silhouette, shaded faces, and a tiny
+    20 on the front face. Built geometrically so the edges stay straight."""
+    from math import cos, sin, pi
+    grid = [["."] * BASE for _ in range(BASE)]
+    cx, cy, radius = 11.5, 11.5, 9.6
+    hexagon = [(cx + radius * sin(a), cy - radius * cos(a))
+               for a in [k * pi / 3 for k in range(6)]]
+
+    def inside(x, y):
+        for at in range(6):
+            x1, y1 = hexagon[at]
+            x2, y2 = hexagon[(at + 1) % 6]
+            if (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1) < 0:
+                return False
+        return True
+
+    # front face: point-down triangle between the three upper-ish vertices
+    tri = [(cx - 5.2, cy - 2.6), (cx + 5.2, cy - 2.6), (cx, cy + 6.4)]
+
+    def in_tri(x, y):
+        signs = []
+        for at in range(3):
+            x1, y1 = tri[at]
+            x2, y2 = tri[(at + 1) % 3]
+            signs.append((x2 - x1) * (y - y1) - (y2 - y1) * (x - x1) >= 0)
+        return all(signs) or not any(signs)
+
+    for y in range(BASE):
+        for x in range(BASE):
+            if not inside(x, y):
+                continue
+            edge = not all(inside(x + dx, y + dy)
+                           for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            if edge:
+                grid[y][x] = "#"
+            elif in_tri(x, y):
+                near = not all(in_tri(x + dx, y + dy)
+                               for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+                grid[y][x] = "S" if near else "F"
+            else:
+                grid[y][x] = "H" if y < cy else "S"
+    # the number 20 on the front face (3x5 digits)
+    two = ["###", "..#", "###", "#..", "###"]
+    zero = ["###", "#.#", "#.#", "#.#", "###"]
+    for digit, ox in ((two, 7), (zero, 12)):
+        for dy, row in enumerate(digit):
+            for dx, cell in enumerate(row):
+                if cell == "#":
+                    grid[6 + dy][ox + dx] = "W"
+    grid[1][11] = "#"  # top vertex marks the hotspot
+    return ["".join(row) for row in grid]
+
+
+D20 = make_d20()
+D20_GLINT = [row.replace("W", "R") for row in D20]
+
+# A terminal prompt: chevron plus a block caret that blinks.
+TERMINAL_ON = [
+    "........................",
+    "........................",
+    "........................",
+    ".##.....................",
+    ".#F##...................",
+    ".#FFF##....########.....",
+    "..##FFF#...#FFFFFF#.....",
+    "....##FFF#.#FFFFFF#.....",
+    "......##F#.#FFFFFF#.....",
+    "....##FFF#.#FFFFFF#.....",
+    "..##FFF#...#FFFFFF#.....",
+    ".#FFF##....#FFFFFF#.....",
+    ".#F##......#FFFFFF#.....",
+    ".##........########.....",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+]
+TERMINAL_OFF = [row.replace("#FFFFFF#", "#......#") if "#FFFFFF#" in row
+                else row for row in TERMINAL_ON]
+TERMINAL_FRAMES = [(TERMINAL_ON, 650), (TERMINAL_OFF, 450)]
+D20_FRAMES = [(D20, 1300), (D20_GLINT, 170), (D20, 170), (D20_GLINT, 170)]
+D20_MOTION = [(D20, 1100), (shift_grid(D20, 0, 1), 220), (D20_GLINT, 170),
+              (shift_grid(D20, 0, 1), 220)]
+
 WAIT_FRAMES = [(HOURGLASS_FULL, 350), (HOURGLASS_HALF, 350),
                (HOURGLASS_DRAINED, 550)]
 PROGRESS_FRAMES = [(PROGRESS_ARROW, 500), (PROGRESS_ARROW_DRAINED, 500)]
@@ -758,7 +879,11 @@ SHAPES = {
                 "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1),
                           "motion": SWORD_MOTION_FRAMES},
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4),
-                         "motion": WAND_MOTION_FRAMES}},
+                         "motion": WAND_MOTION_FRAMES},
+                "modern": static(MODERN, 2, 1),
+                "d20": {"frames": D20_FRAMES, "hotspot": (11, 1),
+                        "motion": D20_MOTION},
+                "terminal": {"frames": TERMINAL_FRAMES, "hotspot": (1, 3)}},
     "pointer": {"classic": static(HAND_CLASSIC, 8, 0),
                 "lich": {"frames": LICH_POINT_FRAMES, "hotspot": (9, 0),
                          "motion": LICH_POINT_MOTION,
@@ -849,6 +974,10 @@ def palette(style, rgb):
         ".": (0, 0, 0, 0),
         "R": (*rgb, 255),
         "W": (255, 255, 248, 255),
+        "O": (250, 250, 252, 255),
+        "o": (250, 250, 252, 96),
+        "f": (*rgb, 140),
+        "K": (38, 38, 43, 255),
         "B": (*BONE["B"], 255),
         "L": (*BONE["L"], 255),
         "b": (*BONE["b"], 255),
@@ -974,6 +1103,17 @@ class contextlib_suppress:
 # Custom image style (needs ImageMagick)
 # ---------------------------------------------------------------------------
 
+def tint_pixels(pixels, rgb):
+    """Colorize: map each pixel's luminance onto the chosen color, keeping
+    alpha, so any custom image can follow the theme accent."""
+    tinted = []
+    for r, g, b, a in pixels:
+        lum = (299 * r + 587 * g + 114 * b) // 1000
+        tinted.append((rgb[0] * lum // 255, rgb[1] * lum // 255,
+                       rgb[2] * lum // 255, a))
+    return tinted
+
+
 def load_image_pixels(image_path, size):
     """Decode + fit an arbitrary image to size x size RGBA via ImageMagick."""
     magick = shutil.which("magick")
@@ -1046,13 +1186,19 @@ def shape_hires_spec(shape, grid_style, left_handed, animated=True,
 
 
 def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
-                 animated=True, motion=True, speed=1.0):
+                 animated=True, motion=True, speed=1.0, image_tint=False):
     """Resolve one shape to [(nominal, w, h, xhot, yhot, delay, pixels)]."""
     grid_style = grid_style_for(style)
     if style == "image" and shape in ("default", "pointer"):
         hx, hy = image_hotspot
-        return [(BASE * f, BASE * f, BASE * f, hx * f, hy * f, 0,
-                 load_image_pixels(image_path, BASE * f)) for f in SCALES]
+        images = []
+        for f in SCALES:
+            pixels = load_image_pixels(image_path, BASE * f)
+            if image_tint:
+                pixels = tint_pixels(pixels, roles["R"][:3])
+            images.append((BASE * f, BASE * f, BASE * f, hx * f, hy * f, 0,
+                           pixels))
+        return images
     frames, xhot, yhot = shape_spec(shape, grid_style, left_handed, animated,
                                     motion)
     hires = shape_hires_spec(shape, grid_style, left_handed, animated, motion)
@@ -1082,74 +1228,9 @@ def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
     return images
 
 
-def build_hyprcursor(theme_dir, shapes_images, animated=True):
-    """Compile a native Hyprcursor theme into theme_dir, when possible.
-
-    Only for fully static themes: Hyprland's cursor manager animates the
-    XCursor lane solely when NO hyprcursor theme is loaded, and the
-    hyprcursor lane renders a single frame in practice — so shipping
-    hyprcursor files alongside an animated theme freezes every animation
-    (verified empirically on Hyprland 0.56). With animation on, we remove
-    the hyprcursor files and let the animated XCursor lane serve Hyprland.
-    """
-    if animated:
-        manifest = Path(theme_dir) / "manifest.hl"
-        hyprcursors = Path(theme_dir) / "hyprcursors"
-        if manifest.exists():
-            manifest.unlink()
-        if hyprcursors.exists():
-            shutil.rmtree(hyprcursors)
-        return []
-    util = shutil.which("hyprcursor-util")
-    if not util:
-        return []
-    with tempfile.TemporaryDirectory(prefix="cursorforge-hc-") as tmp:
-        work = Path(tmp) / "work"
-        out = Path(tmp) / "out"
-        work.mkdir()
-        out.mkdir()
-        (work / "manifest.hl").write_text(
-            f"name = {THEME_NAME}\n"
-            "description = Pixel-art cursor theme generated by OmCursor Forge\n"
-            "version = 1.0\n"
-            "cursors_directory = hyprcursors\n")
-        for shape, images in shapes_images.items():
-            names = ALIASES[shape]
-            shape_dir = work / "hyprcursors" / names[0]
-            shape_dir.mkdir(parents=True)
-            meta = ["resize_algorithm = nearest"]
-            first = images[0]
-            meta.append(f"hotspot_x = {first[3] / first[1]:.4f}")
-            meta.append(f"hotspot_y = {first[4] / first[2]:.4f}")
-            for alias in names[1:]:
-                meta.append(f"define_override = {alias}")
-            for index, (nominal, w, h, _x, _y, delay, pixels) in enumerate(images):
-                file_name = f"{nominal}_{index}.png"
-                (shape_dir / file_name).write_bytes(png_bytes(pixels, w, h))
-                if delay > 0:
-                    meta.append(f"define_size = {nominal}, {file_name}, {delay}")
-                else:
-                    meta.append(f"define_size = {nominal}, {file_name}")
-            (shape_dir / "meta.hl").write_text("\n".join(meta) + "\n")
-        result = subprocess.run(
-            [util, "--create", str(work), "--output", str(out)],
-            capture_output=True, timeout=60)
-        compiled = out / f"theme_{THEME_NAME}"
-        if result.returncode != 0 or not (compiled / "manifest.hl").is_file():
-            detail = (result.stderr or result.stdout).decode(errors="replace")
-            return [f"hyprcursor-util failed; XCursor fallback stays active: "
-                    f"{detail.strip()[:200]}"]
-        target = Path(theme_dir) / "hyprcursors"
-        if target.exists():
-            shutil.rmtree(target)
-        shutil.copytree(compiled / "hyprcursors", target)
-        shutil.copy2(compiled / "manifest.hl", Path(theme_dir) / "manifest.hl")
-    return []
-
-
 def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
                 image_hotspot=(0, 0), animated=True, motion=True, speed=1.0,
-                ripple_shape="diamond"):
+                ripple_shape="diamond", image_tint=False):
     """Write the full cursor theme + previews. Returns (dir, warnings)."""
     theme_dir = Path(out_dir) / THEME_NAME
     cursors_dir = theme_dir / "cursors"
@@ -1164,7 +1245,7 @@ def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
     for shape in SHAPES:
         images = shape_images(shape, style, roles, left_handed,
                               image_path, image_hotspot, animated, motion,
-                              speed)
+                              speed, image_tint)
         shapes_images[shape] = images
         data = xcursor_bytes(images)
         for name in ALIASES[shape]:
@@ -1176,7 +1257,15 @@ def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
                   "Comment=Pixel-art cursor theme generated by OmCursor Forge\n"
                   "Inherits=Adwaita\n").encode())
 
-    warnings = build_hyprcursor(theme_dir, shapes_images, animated)
+    # Single rendering lane by design: only XCursor output is shipped. The
+    # Hyprcursor lane was removed after size/scale mis-rendering — XCursor is
+    # byte-verified at every nominal and Hyprland consumes it everywhere.
+    warnings = []
+    for stale in (theme_dir / "manifest.hl", theme_dir / "hyprcursors"):
+        if stale.is_dir():
+            shutil.rmtree(stale)
+        elif stale.exists():
+            stale.unlink()
 
     # Previews for the shell UI: both styles at the current color, the active
     # style as current.png (the bar widget's icon), and a one-row gallery of
@@ -1280,9 +1369,36 @@ def read_gtk_cursor():
     return theme, size
 
 
+def fractional_scale_warning():
+    """Fractionally scaled monitors + hardware cursors crop cursor buffers
+    on some stacks. Detect the combination and hand the user the fix."""
+    hyprctl = shutil.which("hyprctl")
+    if not hyprctl:
+        return None
+    ok, out = run_quiet([hyprctl, "-j", "monitors"])
+    if not ok:
+        return None
+    try:
+        fractional = any(float(m.get("scale", 1)) != int(float(m.get("scale", 1)))
+                         for m in json.loads(out))
+    except (ValueError, TypeError):
+        return None
+    if not fractional:
+        return None
+    ok, out = run_quiet([hyprctl, "getoption", "cursor:no_hardware_cursors"])
+    if ok and "int: 1" in out:
+        return None
+    return ("A monitor uses fractional scaling with hardware cursors; if the "
+            "cursor looks cropped, run fix-fractional-cursor from the plugin "
+            "folder")
+
+
 def apply_cursor(theme, size):
     """Point GTK and Hyprland at the theme. Returns list of warnings."""
     warnings = []
+    scale_warning = fractional_scale_warning()
+    if scale_warning:
+        warnings.append(scale_warning)
     gsettings = shutil.which("gsettings")
     if gsettings:
         current, _ = read_gtk_cursor()
@@ -1322,7 +1438,7 @@ def load_settings():
 
 def save_settings(settings):
     allowed = ("style", "colorMode", "customColor", "size", "imagePath",
-               "imageHotspot", "leftHanded", "animated", "motion", "speed",
+               "imageHotspot", "imageTint", "leftHanded", "animated", "motion", "speed",
                "rippleShape", "clickRipple", "active", "restore")
     clean = {key: settings[key] for key in allowed if key in settings}
     atomic_write(config_path(),
@@ -1358,7 +1474,8 @@ def cmd_apply(args):
         args.out or data_home() / "icons", args.style, rgb, args.image,
         left_handed=args.left_handed, image_hotspot=image_hotspot,
         animated=not args.no_animation, motion=not args.no_motion,
-        speed=SPEEDS[args.speed], ripple_shape=args.ripple_shape)
+        speed=SPEEDS[args.speed], ripple_shape=args.ripple_shape,
+        image_tint=args.image_tint)
 
     settings = load_settings()
     if not args.no_apply:
@@ -1377,6 +1494,7 @@ def cmd_apply(args):
             "size": args.size,
             "imagePath": args.image or "",
             "imageHotspot": args.image_hotspot,
+            "imageTint": bool(args.image_tint),
             "leftHanded": bool(args.left_handed),
             "animated": not args.no_animation,
             "motion": not args.no_motion,
@@ -1456,6 +1574,8 @@ def main(argv=None):
                          help="image file for the image style")
     apply_p.add_argument("--image-hotspot", default="0,0",
                          help="hotspot x,y on the 24px grid for the image style")
+    apply_p.add_argument("--image-tint", action="store_true",
+                         help="colorize the custom image toward the theme color")
     apply_p.add_argument("--left-handed", action="store_true",
                          help="mirror the hand and arrow shapes")
     apply_p.add_argument("--no-animation", action="store_true",
