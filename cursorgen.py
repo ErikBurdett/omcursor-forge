@@ -1510,6 +1510,7 @@ def cmd_apply(args):
         shutil.rmtree(legacy, ignore_errors=True)
 
     return {"ok": True, "themeDir": str(theme_dir), "applied": not args.no_apply,
+            "fractionalScaleIssue": any("fractional" in w for w in warnings),
             "warnings": warnings}
 
 

@@ -38,8 +38,9 @@ Hyprland and GTK apps.
   blades glint. Tune it with *Motion* and *Animated* toggles and a
   calm/normal/lively *Speed* control — or make everything static.
 - **Click ripple**: an accent-colored ring (diamond, circle, or burst)
-  bursts at the pointer on every left click — even over fullscreen games —
-  via an optional non-consuming mouse bind (`./install-click-ripple`).
+  bursts at the pointer on every left click — even over fullscreen games.
+  Needs a one-time non-consuming mouse bind; the panel offers an
+  **Install bind** button (nothing touches your config until you click it).
 - **Left-handed mode**: mirrors the hand and arrow shapes and their
   hotspots.
 - **Custom image style**: point it at any image file and it becomes your
@@ -67,7 +68,9 @@ Then add the widget to your bar if it did not appear automatically:
 omarchy plugin enable io.github.erikburdett.cursorforge right
 ```
 
-OmCursor Forge changes nothing until you click something in its panel: the
+OmEverything is driven from the panel — including the optional click-ripple
+bind and the fractional-scaling fix, each behind its own button. OmCursor
+Forge changes nothing until you click something in its panel: the
 first apply is your consent, and the previous cursor theme is recorded so it
 can be restored.
 
@@ -129,11 +132,11 @@ Nothing is downloaded or installed by the plugin at any point.
 
 **Cursor looks cropped / cut off?** Fractionally scaled monitors (for
 example 1.25x) plus hardware cursor planes crop scaled cursor buffers on
-some driver stacks. Run `./fix-fractional-cursor` from the plugin folder —
-it switches Hyprland to software cursors immediately and persists that via
-a clearly marked, backed-up block in `~/.config/hypr/looknfeel.lua`
-(`./fix-fractional-cursor remove` undoes it). OmCursor Forge also warns in
-the panel when it detects this combination.
+some driver stacks. The panel detects the combination and shows a
+**Fix scaling** button — it switches Hyprland to software cursors
+immediately and persists that via a clearly marked, backed-up block in
+`~/.config/hypr/looknfeel.lua`. The same fix is available from the plugin
+folder as `./fix-fractional-cursor` (`remove` undoes it).
 
 ## Removal
 

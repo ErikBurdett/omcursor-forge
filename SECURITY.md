@@ -43,6 +43,12 @@ What it does, exactly:
   position itself via `hyprctl cursorpos`.
 - The ripple overlay window is visual-only: empty input region, no
   keyboard focus, no exclusion zone — it can never intercept a click.
+- After each theme apply, a transparent surface flashes under the pointer
+  for 50 ms so the compositor re-resolves the cursor shape immediately;
+  it carries no content and takes no keyboard focus.
+- The panel's Install bind / Fix scaling buttons run the same auditable
+  scripts shipped in the repo — a button press is the consent step, and
+  nothing runs them automatically.
 - `./uninstall-click-ripple` removes the marked block (with a backup).
 
 ## Notes for marketplace reviewers

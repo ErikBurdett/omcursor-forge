@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 
 // Click-ripple overlay: a brief pixel-art ring burst at the pointer on every
@@ -52,6 +53,49 @@ Item {
     target: root.service
     ignoreUnknownSignals: true
     function onRipple(x, y) { root.play(x, y) }
+
+    // Hyprland reloads a theme on setcursor but keeps the currently shown
+    // shape's old buffer until the next set_cursor request. Flashing a
+    // transparent surface under the pointer for one moment forces two
+    // fresh shape requests (enter flash, re-enter what was below), both
+    // resolved against the just-applied theme — so the cursor updates the
+    // instant a panel control is clicked.
+    function onApplied() {
+      flashScreen = root.focusedScreen()
+      refreshFlash = true
+      flashTimer.restart()
+    }
+  }
+
+  property bool refreshFlash: false
+  property var flashScreen: null
+
+  function focusedScreen() {
+    var monitor = Hyprland.focusedMonitor
+    var screens = Quickshell.screens
+    for (var at = 0; at < screens.length; at++) {
+      if (monitor && screens[at].name === monitor.name) return screens[at]
+    }
+    return screens.length > 0 ? screens[0] : null
+  }
+
+  Timer {
+    id: flashTimer
+    interval: 50
+    onTriggered: root.refreshFlash = false
+  }
+
+  PanelWindow {
+    visible: root.refreshFlash && root.flashScreen !== null
+    screen: root.flashScreen
+    anchors { top: true; bottom: true; left: true; right: true }
+    color: "transparent"
+    WlrLayershell.namespace: "omcursor-forge-refresh"
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    exclusionMode: ExclusionMode.Ignore
+    // Deliberately NO empty input mask: the pointer must enter this surface
+    // for the compositor to re-resolve the cursor shape.
   }
 
   Timer {

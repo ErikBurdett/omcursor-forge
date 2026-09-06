@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as QQC
 import Quickshell
 import qs.Commons
 import qs.Ui
@@ -62,7 +63,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(380))
-    contentHeight: panel.fittedContentHeight(content.implicitHeight, Style.space(640))
+    contentHeight: panel.fittedContentHeight(content.implicitHeight, Style.space(780))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -70,9 +71,20 @@ Panel {
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
 
+      Flickable {
+        id: panelFlick
+        anchors.fill: parent
+        contentWidth: width
+        contentHeight: content.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        flickableDirection: Flickable.VerticalFlick
+        interactive: contentHeight > height
+        QQC.ScrollBar.vertical: QQC.ScrollBar { policy: QQC.ScrollBar.AsNeeded }
+
       Column {
         id: content
-        width: parent.width
+        width: panelFlick.width
         spacing: Style.space(10)
 
         Row {
@@ -453,6 +465,53 @@ Panel {
           }
         }
 
+        Row {
+          spacing: Style.space(6)
+          visible: root.service ? root.service.clickRipple === true
+            && root.service.bindInstalled !== true : false
+
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, Style.space(200))
+            text: "The ripple needs a one-time mouse bind"
+            color: Color.muted
+            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.Wrap
+          }
+
+          Button {
+            text: "Install bind"
+            bordered: true
+            foreground: root.barForeground
+            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+            onClicked: if (root.service) root.service.installRippleBind()
+          }
+        }
+
+        Row {
+          spacing: Style.space(6)
+          visible: root.service ? root.service.fractionalIssue === true : false
+
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, Style.space(200))
+            text: "Fractional display scaling can crop cursors"
+            color: Color.urgent
+            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.Wrap
+          }
+
+          Button {
+            text: "Fix scaling"
+            bordered: true
+            foreground: root.barForeground
+            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+            onClicked: if (root.service) root.service.fixFractionalScale()
+          }
+        }
+
         PanelSectionHeader { text: "Every shape" }
 
         Image {
@@ -502,6 +561,7 @@ Panel {
           font.pixelSize: Style.font.bodySmall
           wrapMode: Text.Wrap
         }
+      }
       }
     }
   }

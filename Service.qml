@@ -38,6 +38,8 @@ Item {
   readonly property bool busy: generator.running
   property bool pendingApply: false
   property string lastError: ""
+  property bool bindInstalled: false
+  property bool fractionalIssue: false
   property int previewVersion: 0
   property bool settingsLoaded: false
 
@@ -269,13 +271,23 @@ Item {
   function handleResult(text) {
     var report = null
     try { report = JSON.parse(text) } catch (error) { report = null }
+    if (report) fractionalIssue = report.fractionalScaleIssue === true
     if (!report || report.ok !== true) {
       lastError = report && report.error ? String(report.error)
         : "The cursor generator failed; see the shell log"
       return
     }
-    if (report.warnings && report.warnings.length > 0)
-      lastError = String(report.warnings[0])
+    // The fractional-scale warning has its own flag + panel button; keep
+    // lastError for genuinely unexpected conditions.
+    if (report.warnings) {
+      for (var at = 0; at < report.warnings.length; at++) {
+        var warning = String(report.warnings[at])
+        if (warning.indexOf("fractional") < 0) {
+          lastError = warning
+          break
+        }
+      }
+    }
     previewVersion++
     applied()
   }
@@ -347,6 +359,39 @@ Item {
   // colors when OmCursor Forge is not applied.
   onEffectiveColorChanged: if (settingsLoaded) applyTimer.restart()
 
+  function checkBindInstalled() {
+    if (!bindCheck.running)
+      bindCheck.exec(["/usr/bin/grep", "-q", "cursorforge-click-ripple",
+        configHome + "/hypr/bindings.lua"])
+  }
+
+  function runHelper(script) {
+    if (helper.running) return false
+    helper.exec([pluginSourceDir + "/" + script])
+    return true
+  }
+
+  function installRippleBind() { return runHelper("install-click-ripple") }
+  function removeRippleBind() { return runHelper("uninstall-click-ripple") }
+  function fixFractionalScale() { return runHelper("fix-fractional-cursor") }
+
+  Component.onCompleted: checkBindInstalled()
+
+  Process {
+    id: bindCheck
+    onExited: function(exitCode) { root.bindInstalled = exitCode === 0 }
+  }
+
+  Process {
+    id: helper
+    stdout: StdioCollector { id: helperOut }
+    onExited: function(exitCode) {
+      root.checkBindInstalled()
+      // Re-apply so a just-run fractional fix clears its warning flag.
+      if (root.active) root.requestApply()
+    }
+  }
+
   Timer {
     id: applyTimer
     interval: 350
@@ -416,6 +461,8 @@ Item {
         speed: root.speed,
         rippleShape: root.rippleShape,
         clickRipple: root.clickRipple,
+        bindInstalled: root.bindInstalled,
+        fractionalIssue: root.fractionalIssue,
         active: root.active,
         busy: root.busy,
         lastError: root.lastError,
@@ -442,6 +489,18 @@ Item {
 
     function setImageHotspot(spot: string): string {
       return root.setImageHotspot(spot) ? "ok" : "expected x,y within 0-23"
+    }
+
+    function installClickBind(): string {
+      return root.installRippleBind() ? "ok" : "busy"
+    }
+
+    function removeClickBind(): string {
+      return root.removeRippleBind() ? "ok" : "busy"
+    }
+
+    function fixFractional(): string {
+      return root.fixFractionalScale() ? "ok" : "busy"
     }
 
     function toggleImageTint(): string {

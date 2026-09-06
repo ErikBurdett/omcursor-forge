@@ -4,6 +4,26 @@ All notable changes to OmCursor Forge (formerly Cursor Forge) are documented her
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.3.0] - 2026-09-06
+
+### Fixed
+
+- The panel now scrolls when its content exceeds the available height, so
+  the Restore button and footer can no longer render outside the popup.
+- **The cursor updates the instant a panel control is clicked.** Hyprland
+  reloads a theme on `setcursor` but keeps showing the current shape's old
+  buffer until the next shape request; after every apply a transparent
+  surface now flashes under the pointer for 50 ms, forcing two fresh shape
+  requests resolved against the new theme.
+
+### Added
+
+- Fully panel-driven setup: **Install bind** appears when the click ripple
+  lacks its mouse bind, and **Fix scaling** appears when fractional
+  scaling with hardware cursors is detected — one `omarchy plugin add
+  … --enable` and every remaining step is a button (IPC:
+  `installClickBind`, `removeClickBind`, `fixFractional`).
+
 ## [2.2.0] - 2026-09-06
 
 ### Added
