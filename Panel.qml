@@ -103,7 +103,7 @@ Panel {
             anchors.verticalCenter: parent.verticalCenter
 
             Text {
-              text: "Cursor Forge"
+              text: "OmCursor Forge"
               color: root.barForeground
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.subtitle

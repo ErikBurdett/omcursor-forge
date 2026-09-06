@@ -1,4 +1,4 @@
-# Cursor Forge
+# OmCursor Forge
 
 Forge retro pixel-art mouse cursors for [Omarchy](https://omarchy.org), right
 from the bar. Pick a style — a classic pixel arrow, a **lich's skeletal hand
@@ -8,7 +8,7 @@ Omarchy theme accent automatically or stays fixed to a custom hex. Cursor
 Forge renders a real XCursor theme on the spot and applies it live to
 Hyprland and GTK apps.
 
-![Cursor Forge preview](preview.png)
+![OmCursor Forge preview](preview.png)
 
 ## What you get
 
@@ -54,7 +54,7 @@ Hyprland and GTK apps.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/ErikBurdett/omarchy-cursor-forge.git --enable
+omarchy plugin add https://github.com/ErikBurdett/omcursor-forge.git --enable
 ```
 
 Then add the widget to your bar if it did not appear automatically:
@@ -63,7 +63,7 @@ Then add the widget to your bar if it did not appear automatically:
 omarchy plugin enable io.github.erikburdett.cursorforge right
 ```
 
-Cursor Forge changes nothing until you click something in its panel: the
+OmCursor Forge changes nothing until you click something in its panel: the
 first apply is your consent, and the previous cursor theme is recorded so it
 can be restored.
 
@@ -102,7 +102,7 @@ can be restored.
 
 `cursorgen.py` (Python standard library only) renders the pixel-art shapes,
 recolors them, and writes a standards-compliant XCursor theme to
-`~/.local/share/icons/CursorForge` — fourteen shapes with their common
+`~/.local/share/icons/OmCursorForge` — fourteen shapes with their common
 aliases, at 24/48/72/96 px with premultiplied alpha, correct hotspots, and
 multi-frame animation where a shape animates. Anything else inherits from
 Adwaita. Animated builds deliberately skip Hyprcursor output — Hyprland
@@ -135,10 +135,10 @@ omarchy-shell io.github.erikburdett.cursorforge reset
 omarchy plugin remove io.github.erikburdett.cursorforge
 ```
 
-Optional cleanup of everything Cursor Forge ever wrote:
+Optional cleanup of everything OmCursor Forge ever wrote:
 
 ```bash
-rm -rf ~/.local/share/icons/CursorForge ~/.config/cursorforge
+rm -rf ~/.local/share/icons/OmCursorForge ~/.config/cursorforge
 ```
 
 ## Development

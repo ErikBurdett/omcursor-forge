@@ -1,8 +1,24 @@
 # Changelog
 
-All notable changes to Cursor Forge are documented here. The format follows
+All notable changes to OmCursor Forge (formerly Cursor Forge) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
+
+## [2.1.0] - 2026-09-06
+
+### Changed
+
+- **Renamed to OmCursor Forge** (display name, generated icon-theme
+  directory `OmCursorForge`, repository slug). The plugin id, settings
+  path, and click-ripple marker are permanent identifiers and keep their
+  original names; the old `CursorForge` icon directory is cleaned up on
+  the next apply.
+
+### Fixed
+
+- Theme builds and resets now take an exclusive file lock, so overlapping
+  runs (for example during a shell restart) can never interleave writes
+  into a mixed theme set.
 
 ## [2.0.0] - 2026-09-06
 

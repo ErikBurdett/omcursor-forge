@@ -1,4 +1,4 @@
-# Contributing to Cursor Forge
+# Contributing to OmCursor Forge
 
 Thanks for your interest! Bug reports, art improvements, and new features
 are all welcome.
@@ -6,8 +6,8 @@ are all welcome.
 ## Getting set up
 
 ```bash
-git clone https://github.com/ErikBurdett/omarchy-cursor-forge.git
-cd omarchy-cursor-forge
+git clone https://github.com/ErikBurdett/omcursor-forge.git
+cd omcursor-forge
 python3 -m venv .venv && .venv/bin/pip install pytest
 .venv/bin/pytest -q tests/
 ```

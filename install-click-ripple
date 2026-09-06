@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs the optional Cursor Forge click-ripple mouse bind.
+# Installs the optional OmCursor Forge click-ripple mouse bind.
 #
 # Appends one NON-CONSUMING left-click bind to your Hyprland bindings.lua —
 # it observes clicks without intercepting them and asks the shell to draw a
@@ -28,7 +28,7 @@ cp "$BINDINGS" "$BINDINGS.bak.$(date +%s)"
 cat >> "$BINDINGS" <<'EOF'
 
 -- BEGIN cursorforge-click-ripple (remove with uninstall-click-ripple)
-o.bind("mouse:272", "Cursor Forge click ripple",
+o.bind("mouse:272", "OmCursor Forge click ripple",
   "omarchy-shell io.github.erikburdett.cursorforge click",
   { non_consuming = true, transparent = true })
 -- END cursorforge-click-ripple

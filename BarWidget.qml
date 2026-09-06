@@ -47,8 +47,8 @@ BarWidget {
   }
 
   function tooltipLabel() {
-    if (!cursorService) return "Cursor Forge"
-    return "Cursor Forge — " + cursorService.styleLabel(cursorService.style)
+    if (!cursorService) return "OmCursor Forge"
+    return "OmCursor Forge — " + cursorService.styleLabel(cursorService.style)
       + " · " + cursorService.effectiveColor
       + (cursorService.active ? "" : " (not applied)")
   }

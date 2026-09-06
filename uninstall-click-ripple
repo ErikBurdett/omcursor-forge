@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Removes the Cursor Forge click-ripple mouse bind added by
+# Removes the OmCursor Forge click-ripple mouse bind added by
 # install-click-ripple. Backs the bindings file up first.
 set -euo pipefail
 

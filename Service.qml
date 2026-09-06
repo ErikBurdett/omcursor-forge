@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Commons
 
-// Cursor Forge service. Owns the cursor settings, watches the settings file
+// OmCursor Forge service. Owns the cursor settings, watches the settings file
 // and the Omarchy theme, and drives cursorgen.py to build + apply the theme.
 Item {
   id: root
@@ -15,7 +15,7 @@ Item {
   readonly property var sizes: [24, 48, 72, 96]
 
   // Mirrors ~/.config/cursorforge/settings.json. `active` means the user has
-  // applied Cursor Forge at least once and wants it restored at login;
+  // applied OmCursor Forge at least once and wants it restored at login;
   // until then the generator only renders previews and never touches the
   // system cursor configuration.
   property string style: "classic"
@@ -60,7 +60,7 @@ Item {
     var xdg = Quickshell.env("XDG_DATA_HOME")
     return xdg && xdg !== "" ? xdg : Quickshell.env("HOME") + "/.local/share"
   }
-  readonly property string previewDir: dataHome + "/icons/CursorForge/previews"
+  readonly property string previewDir: dataHome + "/icons/OmCursorForge/previews"
 
   // Color.accent renders as #aarrggbb; the generator wants #rrggbb.
   function colorToHex(value) {
@@ -329,7 +329,7 @@ Item {
   }
 
   // Theme switch: keep a theme-matched cursor in sync, or refresh preview
-  // colors when Cursor Forge is not applied.
+  // colors when OmCursor Forge is not applied.
   onEffectiveColorChanged: if (settingsLoaded) applyTimer.restart()
 
   Timer {
@@ -366,7 +366,7 @@ Item {
     stderr: StdioCollector { id: generatorErr }
     onExited: function(exitCode) {
       if (exitCode === 127) {
-        root.lastError = "Cursor Forge needs /usr/bin/python3"
+        root.lastError = "OmCursor Forge needs /usr/bin/python3"
       } else {
         root.handleResult(generatorOut.text)
       }

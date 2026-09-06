@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "io.github.erikburdett.cursorforge",
-  "name": "Cursor Forge",
-  "version": "2.0.0",
+  "name": "OmCursor Forge",
+  "version": "2.1.0",
   "author": "Erik Burdett",
   "license": "MIT",
   "description": "Forge retro pixel-art mouse cursors from the bar — theme-matched colors, a lich's skeletal hand, a sword, a wand, or your own image.",
@@ -18,7 +18,7 @@
     "overlay": "ClickOverlay.qml"
   },
   "barWidget": {
-    "displayName": "Cursor Forge",
+    "displayName": "OmCursor Forge",
     "description": "Live preview of your cursor; click to restyle and recolor it",
     "category": "Appearance",
     "allowMultiple": false,
