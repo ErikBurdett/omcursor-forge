@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.erikburdett.cursorforge",
   "name": "Cursor Forge",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": "Erik Burdett",
   "license": "MIT",
   "description": "Forge retro pixel-art mouse cursors from the bar — theme-matched colors, a skeletal pointing hand, or your own image.",

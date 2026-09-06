@@ -448,6 +448,79 @@ MINI_HOURGLASS_DRAINED = [
 HAND_SKELETON_GLINT = [row.replace("#RR#", "#WR#") for row in HAND_SKELETON]
 SKELETON_HAND_FRAMES = [(HAND_SKELETON, 1100), (HAND_SKELETON_GLINT, 140)]
 
+HIRES = 48  # the 48px nominal gets native art instead of a 2x upscale
+
+
+def make_hand_skeleton_48(glint=False):
+    """Native 48x48 skeletal hand.
+
+    Built from the proven 24px silhouette, doubled, then refined for the
+    larger canvas: convex outline corners are beveled away so curves read
+    as curves, the ring gains a gem (which sparkles on the glint frame),
+    the fingertip gets a nail highlight, and the palm a couple of cracks.
+    """
+    grid = [[ch for ch in row for _ in (0, 1)]
+            for row in HAND_SKELETON for _ in (0, 1)]
+
+    def at(x, y):
+        if 0 <= x < HIRES and 0 <= y < HIRES:
+            return grid[y][x]
+        return "."
+
+    # Bevel pass: cut an outline pixel sitting on a convex stair corner —
+    # two orthogonally transparent sides while the two remaining orthogonal
+    # neighbors are outline, so no interior is ever exposed.
+    cuts = []
+    for y in range(HIRES):
+        for x in range(HIRES):
+            if grid[y][x] != "#":
+                continue
+            sides = {(0, -1): at(x, y - 1), (0, 1): at(x, y + 1),
+                     (-1, 0): at(x - 1, y), (1, 0): at(x + 1, y)}
+            transparent = [d for d, ch in sides.items() if ch == "."]
+            outline = [d for d, ch in sides.items() if ch == "#"]
+            if len(transparent) == 2 and len(outline) == 2:
+                dx = transparent[0][0] + transparent[1][0]
+                dy = transparent[0][1] + transparent[1][1]
+                if dx != 0 and dy != 0:  # a true corner, not a strait
+                    cuts.append((x, y))
+    for x, y in cuts:
+        grid[y][x] = "."
+
+    # Ring gem: the doubled ring is a 2x2 R block per original pixel; set a
+    # bright gem that swaps position on the glint frame.
+    ring_rows = [y for y in range(HIRES)
+                 if "R" in grid[y] and grid[y].count("R") >= 4]
+    if ring_rows:
+        y = ring_rows[0]
+        first = grid[y].index("R")
+        gem, spark = (first + 1, first + 3) if not glint else (first + 2, first)
+        grid[y][gem] = "W"
+        if glint:
+            grid[y][spark] = "W"
+            grid[ring_rows[-1]][first + 1] = "W"
+
+    # Nail highlight at the fingertip's lit corner.
+    for y in (2, 3):
+        for x in range(HIRES):
+            if grid[y][x] == "L":
+                grid[y][x] = "W" if y == 2 else "L"
+                break
+
+    # Hairline cracks across the back of the hand.
+    for x, y in ((21, 31), (22, 32), (23, 32), (30, 34), (31, 35)):
+        if grid[y][x] == "B":
+            grid[y][x] = "d"
+
+    return ["".join(line) for line in grid]
+
+
+HAND_SKELETON_48 = make_hand_skeleton_48(False)
+HAND_SKELETON_48_GLINT = make_hand_skeleton_48(True)
+SKELETON_HAND_48_FRAMES = [(HAND_SKELETON_48, 1100),
+                           (HAND_SKELETON_48_GLINT, 140)]
+SKELETON_HIRES = {"frames": SKELETON_HAND_48_FRAMES, "hotspot": (18, 0)}
+
 # A blade pointing to the hotspot, guard and pommel in the accent color.
 SWORD = [
     "##......................",
@@ -585,11 +658,13 @@ def static(grid, xhot, yhot):
 # grid, which the skeleton palette renders in bone tones.
 SHAPES = {
     "default": {"classic": static(ARROW, 1, 1),
-                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0)},
+                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0),
+                             "hires": SKELETON_HIRES},
                 "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
     "pointer": {"classic": static(HAND_CLASSIC, 8, 0),
-                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0)},
+                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0),
+                             "hires": SKELETON_HIRES},
                 "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
     "text": {"classic": static(TEXT_BEAM, 8, 12)},
@@ -693,14 +768,14 @@ def palette(style, rgb):
     return roles
 
 
-def render_grid(grid, roles):
-    """Grid of role chars -> flat list of RGBA tuples, BASE x BASE."""
-    if len(grid) != BASE:
-        raise ValueError(f"grid has {len(grid)} rows, expected {BASE}")
+def render_grid(grid, roles, size=BASE):
+    """Grid of role chars -> flat list of RGBA tuples, size x size."""
+    if len(grid) != size:
+        raise ValueError(f"grid has {len(grid)} rows, expected {size}")
     pixels = []
     for y, row in enumerate(grid):
-        if len(row) != BASE:
-            raise ValueError(f"grid row {y} has {len(row)} columns, expected {BASE}")
+        if len(row) != size:
+            raise ValueError(f"grid row {y} has {len(row)} columns, expected {size}")
         for ch in row:
             if ch not in roles:
                 raise ValueError(f"unknown role character {ch!r} in grid row {y}")
@@ -832,17 +907,33 @@ def palette_style_for(style):
     return "skeleton" if style == "skeleton" else "classic"
 
 
+def resolve_frames(frames, xhot, yhot, size, mirrored, animated):
+    if not animated:
+        frames = [(frames[0][0], 0)]
+    if mirrored:
+        frames = [(mirror_grid(grid), delay) for grid, delay in frames]
+        xhot = size - 1 - xhot
+    return frames, xhot, yhot
+
+
 def shape_spec(shape, grid_style, left_handed, animated=True):
     variants = SHAPES[shape]
     spec = variants.get(grid_style) or variants["classic"]
-    frames = spec["frames"]
-    xhot, yhot = spec["hotspot"]
-    if not animated:
-        frames = [(frames[0][0], 0)]
-    if left_handed and shape in HANDED_SHAPES:
-        frames = [(mirror_grid(grid), delay) for grid, delay in frames]
-        xhot = BASE - 1 - xhot
-    return frames, xhot, yhot
+    mirrored = left_handed and shape in HANDED_SHAPES
+    return resolve_frames(spec["frames"], *spec["hotspot"], BASE,
+                          mirrored, animated)
+
+
+def shape_hires_spec(shape, grid_style, left_handed, animated=True):
+    """Native art for the HIRES nominal, or None to upscale the base grid."""
+    variants = SHAPES[shape]
+    spec = variants.get(grid_style) or variants["classic"]
+    hires = spec.get("hires")
+    if not hires:
+        return None
+    mirrored = left_handed and shape in HANDED_SHAPES
+    return resolve_frames(hires["frames"], *hires["hotspot"], HIRES,
+                          mirrored, animated)
 
 
 def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
@@ -854,10 +945,18 @@ def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
         return [(BASE * f, BASE * f, BASE * f, hx * f, hy * f, 0,
                  load_image_pixels(image_path, BASE * f)) for f in SCALES]
     frames, xhot, yhot = shape_spec(shape, grid_style, left_handed, animated)
+    hires = shape_hires_spec(shape, grid_style, left_handed, animated)
     images = []
     for factor in SCALES:
+        nominal = BASE * factor
+        if hires and nominal == HIRES:
+            hi_frames, hi_xhot, hi_yhot = hires
+            for grid, delay in hi_frames:
+                images.append((nominal, HIRES, HIRES, hi_xhot, hi_yhot, delay,
+                               render_grid(grid, roles, HIRES)))
+            continue
         for grid, delay in frames:
-            images.append((BASE * factor, BASE * factor, BASE * factor,
+            images.append((nominal, nominal, nominal,
                            xhot * factor, yhot * factor, delay,
                            scale_pixels(render_grid(grid, roles),
                                         BASE, BASE, factor)))

@@ -99,6 +99,34 @@ def test_animation_flag_flattens_to_one_frame():
     assert len(glint) == 2
 
 
+def test_hand_48_grids_are_well_formed():
+    roles = cursorgen.palette("skeleton", (210, 164, 20))
+    for grid in (cursorgen.HAND_SKELETON_48, cursorgen.HAND_SKELETON_48_GLINT):
+        assert len(grid) == cursorgen.HIRES
+        assert all(len(row) == cursorgen.HIRES for row in grid)
+        cursorgen.render_grid(grid, roles, cursorgen.HIRES)
+    # the glint frame differs only around the ring gem
+    diff = sum(a != b for row_a, row_b in zip(cursorgen.HAND_SKELETON_48,
+                                              cursorgen.HAND_SKELETON_48_GLINT)
+               for a, b in zip(row_a, row_b))
+    assert 1 <= diff <= 8
+
+
+def test_skeleton_48_nominal_has_native_art(tmp_path):
+    theme = build(tmp_path, "skeleton")
+    images = parse_xcursor((theme / "cursors" / "default").read_bytes())
+    img24 = next(i for i in images if i["nominal"] == 24)
+    img48 = next(i for i in images if i["nominal"] == 48)
+    assert (img48["xhot"], img48["yhot"]) == (18, 0)
+    upscaled = bytearray()
+    for y in range(48):
+        for x in range(48):
+            src = ((y // 2) * 24 + (x // 2)) * 4
+            upscaled += img24["pixels"][src:src + 4]
+    assert bytes(upscaled) != img48["pixels"], \
+        "48px skeleton should be native art, not a 2x upscale"
+
+
 def test_parse_color():
     assert cursorgen.parse_color("#6b8a69") == (0x6B, 0x8A, 0x69)
     for bad in ("6b8a69", "#6b8a6", "#6b8a6zz", "", "#12345g"):

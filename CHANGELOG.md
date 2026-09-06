@@ -4,6 +4,19 @@ All notable changes to Cursor Forge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-09-06
+
+### Changed
+
+- **The skeletal hand got a native 48px remaster.** The 48 nominal size
+  (the default on many setups, including HiDPI) is no longer a 2× upscale
+  of the 24px grid: it is its own 48×48 art — the proven silhouette with
+  outline corners beveled into real curves, a gold ring with a gem that
+  sparkles on the glint frame, a nail highlight, and hairline cracks
+  across the back of the hand. The 24 and 72 sizes keep the crisp 24px
+  grid. The cursor format's per-size image support makes this free —
+  other styles will follow.
+
 ## [1.2.0] - 2026-09-06
 
 ### Added

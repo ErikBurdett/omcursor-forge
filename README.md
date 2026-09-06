@@ -18,7 +18,8 @@ Hyprland and GTK apps.
 - **Custom color**: swatches or any `#rrggbb` hex.
 - **Skeleton hand**: a hand-authored, retro pixel-art skeletal hand pointing
   its index finger — segmented phalanges, knuckle bones, a theme-colored
-  ring, and twin wrist bones.
+  ring, and twin wrist bones. At size 48 it renders dedicated hi-res art
+  with beveled curves, a sparkling ring gem, and hairline bone cracks.
 - **Sword and Wand styles**: a theme-colored blade with a bone crossguard,
   and a wood wand with a sparkling accent star — because your cursor can be
   a fantasy artifact too.
