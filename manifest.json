@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.erikburdett.cursorforge",
+  "name": "Cursor Forge",
+  "version": "1.0.0",
+  "author": "Erik Burdett",
+  "license": "MIT",
+  "description": "Forge retro pixel-art mouse cursors from the bar — theme-matched colors, a skeletal pointing hand, or your own image.",
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Cursor Forge",
+    "description": "Live preview of your cursor; click to restyle and recolor it",
+    "category": "Appearance",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "showStyleName": false
+    },
+    "schema": [
+      {
+        "key": "showStyleName",
+        "type": "boolean",
+        "label": "Show style name",
+        "description": "Show the active cursor style name next to the preview in the bar.",
+        "defaultValue": false
+      }
+    ]
+  }
+}
