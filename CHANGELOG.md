@@ -4,6 +4,15 @@ All notable changes to Cursor Forge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-09-06
+
+### Changed
+
+- **Breaking: the standalone `skeleton` style folded into `lich`.** The
+  skeletal hand now always wears its wizard-robe sleeve; existing
+  settings with `"style": "skeleton"` migrate to `lich` automatically.
+  The styles are now classic, lich, sword, wand, and image.
+
 ## [1.7.0] - 2026-09-06
 
 ### Added

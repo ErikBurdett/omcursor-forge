@@ -43,7 +43,7 @@ originals were reviewed — at native size, enlarged, and on both light and
 dark backgrounds:
 
 ```bash
-python3 cursorgen.py preview --style skeleton --color '#6b8a69' --scale 10 --dark --out /tmp/sheet.png
+python3 cursorgen.py preview --style lich --color '#6b8a69' --scale 10 --dark --out /tmp/sheet.png
 python3 cursorgen.py preview --style classic  --color '#6b8a69' --scale 3  --out /tmp/sheet-small.png
 ```
 

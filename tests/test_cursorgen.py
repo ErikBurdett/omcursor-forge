@@ -18,7 +18,6 @@ ALL_GRIDS = {
     "ARROW": cursorgen.ARROW,
     "HAND_CLASSIC": cursorgen.HAND_CLASSIC,
     "HAND_SKELETON": cursorgen.HAND_SKELETON,
-    "HAND_SKELETON_GLINT": cursorgen.HAND_SKELETON_GLINT,
     "TEXT_BEAM": cursorgen.TEXT_BEAM,
     "HOURGLASS_FULL": cursorgen.HOURGLASS_FULL,
     "HOURGLASS_HALF": cursorgen.HOURGLASS_HALF,
@@ -66,7 +65,7 @@ def test_grids_are_well_formed():
         assert len(grid) == cursorgen.BASE, name
         for row in grid:
             assert len(row) == cursorgen.BASE, f"{name}: {row!r}"
-        for style in ("classic", "skeleton"):
+        for style in ("classic", "lich"):
             cursorgen.render_grid(grid, cursorgen.palette(style, (107, 138, 105)))
 
 
@@ -97,7 +96,7 @@ def test_animation_flag_flattens_to_one_frame():
     assert len(frames) == 3 and frames[0][1] > 0
     frames, _, _ = cursorgen.shape_spec("wait", "classic", False, animated=False)
     assert frames == [(cursorgen.HOURGLASS_FULL, 0)]
-    motion, _, _ = cursorgen.shape_spec("default", "skeleton", False)
+    motion, _, _ = cursorgen.shape_spec("default", "lich", False)
     assert len(motion) == 5
 
 
@@ -114,13 +113,13 @@ def test_grid_motion_helpers():
 
 
 def test_motion_frames_move_and_flag_disables_them():
-    moving, xhot, yhot = cursorgen.shape_spec("default", "skeleton", False,
+    moving, xhot, yhot = cursorgen.shape_spec("default", "lich", False,
                                               motion=True)
-    still, _, _ = cursorgen.shape_spec("default", "skeleton", False,
+    still, _, _ = cursorgen.shape_spec("default", "lich", False,
                                        motion=False)
     assert (xhot, yhot) == (9, 0)  # hotspot never follows the sprite
     assert len({tuple(grid) for grid, _ in moving}) >= 3
-    assert still == cursorgen.SKELETON_HAND_FRAMES
+    assert still == cursorgen.LICH_HAND_FRAMES
     # sword bobs diagonally
     sword_motion, _, _ = cursorgen.shape_spec("default", "sword", False)
     assert any(grid == cursorgen.SWORD_BOB for grid, _ in sword_motion)
@@ -144,7 +143,7 @@ def test_ripple_shapes_differ(tmp_path):
 
 
 def test_pointer_is_distinct_from_default_for_hand_styles():
-    for grid_style in ("skeleton", "lich"):
+    for grid_style in ("lich",):
         default, _, _ = cursorgen.shape_spec("default", grid_style, False)
         pointer, _, _ = cursorgen.shape_spec("pointer", grid_style, False)
         assert default != pointer, grid_style
@@ -154,20 +153,19 @@ def test_pointer_is_distinct_from_default_for_hand_styles():
 
 def test_hand_48_grids_are_well_formed():
     roles = cursorgen.palette("skeleton", (210, 164, 20))
-    for grid in (cursorgen.HAND_SKELETON_48, cursorgen.HAND_SKELETON_48_GLINT,
-                 cursorgen.HAND_LICH_48, cursorgen.HAND_LICH_48_GLINT):
+    for grid in (cursorgen.HAND_LICH_48, cursorgen.HAND_LICH_48_GLINT):
         assert len(grid) == cursorgen.HIRES
         assert all(len(row) == cursorgen.HIRES for row in grid)
         cursorgen.render_grid(grid, roles, cursorgen.HIRES)
     # the glint frame differs only around the ring gem
-    diff = sum(a != b for row_a, row_b in zip(cursorgen.HAND_SKELETON_48,
-                                              cursorgen.HAND_SKELETON_48_GLINT)
+    diff = sum(a != b for row_a, row_b in zip(cursorgen.HAND_LICH_48,
+                                              cursorgen.HAND_LICH_48_GLINT)
                for a, b in zip(row_a, row_b))
     assert 1 <= diff <= 8
 
 
 def test_hidpi_96_nominal_scales_the_hires_art(tmp_path):
-    theme = build(tmp_path, "skeleton")
+    theme = build(tmp_path, "lich")
     images = parse_xcursor((theme / "cursors" / "default").read_bytes())
     img48 = next(i for i in images if i["nominal"] == 48)
     img96 = next(i for i in images if i["nominal"] == 96)
@@ -181,8 +179,8 @@ def test_hidpi_96_nominal_scales_the_hires_art(tmp_path):
         "96px should be an exact 2x of the native 48px art"
 
 
-def test_skeleton_48_nominal_has_native_art(tmp_path):
-    theme = build(tmp_path, "skeleton")
+def test_lich_48_nominal_has_native_art(tmp_path):
+    theme = build(tmp_path, "lich")
     images = parse_xcursor((theme / "cursors" / "default").read_bytes())
     img24 = next(i for i in images if i["nominal"] == 24)
     img48 = next(i for i in images if i["nominal"] == 48)
@@ -193,7 +191,7 @@ def test_skeleton_48_nominal_has_native_art(tmp_path):
             src = ((y // 2) * 24 + (x // 2)) * 4
             upscaled += img24["pixels"][src:src + 4]
     assert bytes(upscaled) != img48["pixels"], \
-        "48px skeleton should be native art, not a 2x upscale"
+        "48px lich should be native art, not a 2x upscale"
 
 
 def test_parse_color():
@@ -262,7 +260,7 @@ def test_wait_cursor_animates(tmp_path):
 
 
 def test_no_animation_builds_static_theme(tmp_path):
-    theme = build(tmp_path, "skeleton", extra=("--no-animation",))
+    theme = build(tmp_path, "lich", extra=("--no-animation",))
     for name in ("wait", "default", "progress"):
         images = parse_xcursor((theme / "cursors" / name).read_bytes())
         assert len(images) == len(cursorgen.SCALES)
@@ -270,13 +268,13 @@ def test_no_animation_builds_static_theme(tmp_path):
 
 
 def test_left_handed_theme_mirrors_hotspot(tmp_path):
-    theme = build(tmp_path, "skeleton", extra=("--left-handed",))
+    theme = build(tmp_path, "lich", extra=("--left-handed",))
     images = parse_xcursor((theme / "cursors" / "default").read_bytes())
     assert images[0]["xhot"] == cursorgen.BASE - 1 - 9
 
 
 def test_transparent_pixels_are_fully_zero(tmp_path):
-    theme = build(tmp_path, "skeleton")
+    theme = build(tmp_path, "lich")
     images = parse_xcursor((theme / "cursors" / "default").read_bytes())
     pixels = images[0]["pixels"]
     seen_transparent = seen_opaque = False
@@ -295,7 +293,7 @@ def test_transparent_pixels_are_fully_zero(tmp_path):
 
 def test_previews_are_valid_pngs(tmp_path):
     theme = build(tmp_path, "classic")
-    for name in ("current.png", "classic.png", "skeleton.png", "lich.png",
+    for name in ("current.png", "classic.png", "lich.png",
                  "sword.png", "wand.png", "shapes.png", "ripple_0.png",
                  "ripple_3.png"):
         data = (theme / "previews" / name).read_bytes()
@@ -314,11 +312,11 @@ def test_hyprcursor_only_ships_for_static_themes(tmp_path):
     loaded, so an animated build must never ship hyprcursor files — and must
     scrub stale ones left by an earlier static build."""
     import shutil as shutil_module
-    static_theme = build(tmp_path, "skeleton", extra=("--no-animation",))
+    static_theme = build(tmp_path, "lich", extra=("--no-animation",))
     has_util = shutil_module.which("hyprcursor-util") is not None
     assert (static_theme / "manifest.hl").is_file() == has_util
 
-    animated_theme = build(tmp_path, "skeleton")
+    animated_theme = build(tmp_path, "lich")
     assert animated_theme == static_theme
     assert not (animated_theme / "manifest.hl").exists()
     assert not (animated_theme / "hyprcursors").exists()
@@ -333,7 +331,7 @@ def test_no_save_leaves_config_untouched(tmp_path, monkeypatch):
 def test_settings_roundtrip_whitelists_keys(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
     cursorgen.save_settings({
-        "style": "skeleton", "colorMode": "theme", "customColor": "#123456",
+        "style": "lich", "colorMode": "theme", "customColor": "#123456",
         "size": 24, "imagePath": "", "imageHotspot": "0,0",
         "leftHanded": False, "animated": True, "motion": False,
         "speed": "lively", "rippleShape": "burst", "clickRipple": True,
@@ -342,7 +340,7 @@ def test_settings_roundtrip_whitelists_keys(tmp_path, monkeypatch):
         "junk": "dropped",
     })
     loaded = cursorgen.load_settings()
-    assert loaded["style"] == "skeleton"
+    assert loaded["style"] == "lich"
     assert loaded["active"] is True and loaded["animated"] is True
     assert loaded["motion"] is False and loaded["speed"] == "lively"
     assert loaded["rippleShape"] == "burst"

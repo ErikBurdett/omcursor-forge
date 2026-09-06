@@ -37,8 +37,8 @@ BASE = 24                # art is drawn on a 24x24 grid
 SCALES = (1, 2, 3, 4)    # emit nominal sizes 24, 48, 72, 96 (96 for HiDPI:
                          # Hyprland requests size x ceil(scale) from libXcursor)
 VALID_SIZES = tuple(BASE * s for s in SCALES)
-STYLES = ("classic", "skeleton", "lich", "sword", "wand", "image")
-ART_STYLES = ("classic", "skeleton", "lich", "sword", "wand")
+STYLES = ("classic", "lich", "sword", "wand", "image")
+ART_STYLES = ("classic", "lich", "sword", "wand")
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 HOTSPOT_RE = re.compile(r"^\d{1,2},\d{1,2}$")
 
@@ -445,18 +445,8 @@ MINI_HOURGLASS_DRAINED = [
     "########",
 ]
 
-# The skeleton hand's accent ring double-blinks on a slow loop.
-HAND_SKELETON_GLINT = [row.replace("#RR#", "#WR#") for row in HAND_SKELETON]
-SKELETON_HAND_FRAMES = [(HAND_SKELETON, 1200), (HAND_SKELETON_GLINT, 140),
-                        (HAND_SKELETON, 140), (HAND_SKELETON_GLINT, 140)]
-
-# Hover ("pointer") state: the hand charges up — fingertip spark and lit
-# ring pulsing quickly, so interactive elements visibly wake the cursor.
-HAND_SKELETON_POINT_A = [row.replace("#LB#", "#WB#") if at == 1 else row
-                         for at, row in enumerate(HAND_SKELETON_GLINT)]
-HAND_SKELETON_POINT_B = HAND_SKELETON_GLINT
-SKELETON_POINT_FRAMES = [(HAND_SKELETON_POINT_A, 300),
-                         (HAND_SKELETON_POINT_B, 300)]
+# HAND_SKELETON is internal source art: the lich style reuses its hand rows
+# and the tests exercise it, but it is not exposed as a style of its own.
 
 # The lich variant: the same hand emerging from a wizard-robe sleeve that
 # droops off the wrist in tattered points. Cloth roles: C dark, c fold.
@@ -547,23 +537,12 @@ def make_hand_48(base, glint=False):
     return ["".join(line) for line in grid]
 
 
-HAND_SKELETON_48 = make_hand_48(HAND_SKELETON, False)
-HAND_SKELETON_48_GLINT = make_hand_48(HAND_SKELETON, True)
-SKELETON_HAND_48_FRAMES = [(HAND_SKELETON_48, 1200),
-                           (HAND_SKELETON_48_GLINT, 140),
-                           (HAND_SKELETON_48, 140),
-                           (HAND_SKELETON_48_GLINT, 140)]
-SKELETON_HIRES = {"frames": SKELETON_HAND_48_FRAMES, "hotspot": (18, 0)}
-
 HAND_LICH_48 = make_hand_48(HAND_LICH, False)
 HAND_LICH_48_GLINT = make_hand_48(HAND_LICH, True)
 LICH_HAND_48_FRAMES = [(HAND_LICH_48, 1200), (HAND_LICH_48_GLINT, 140),
                        (HAND_LICH_48, 140), (HAND_LICH_48_GLINT, 140)]
 LICH_HIRES = {"frames": LICH_HAND_48_FRAMES, "hotspot": (18, 0)}
 
-SKELETON_POINT_48_FRAMES = [(make_hand_48(HAND_SKELETON_POINT_A), 300),
-                            (make_hand_48(HAND_SKELETON_POINT_B), 300)]
-SKELETON_POINT_HIRES = {"frames": SKELETON_POINT_48_FRAMES, "hotspot": (18, 0)}
 LICH_POINT_48_FRAMES = [(make_hand_48(HAND_LICH_POINT_A), 300),
                         (make_hand_48(HAND_LICH_GLINT), 300)]
 LICH_POINT_HIRES = {"frames": LICH_POINT_48_FRAMES, "hotspot": (18, 0)}
@@ -735,17 +714,6 @@ PROGRESS_FRAMES = [(PROGRESS_ARROW, 500), (PROGRESS_ARROW_DRAINED, 500)]
 # back to the in-place glint sequences.
 # ---------------------------------------------------------------------------
 
-HAND_SKELETON_HALF_TAP = bend_finger(HAND_SKELETON, 1)
-HAND_SKELETON_TAP = bend_finger(HAND_SKELETON_GLINT, 2)
-SKELETON_MOTION_FRAMES = [(HAND_SKELETON, 1000), (HAND_SKELETON_HALF_TAP, 90),
-                          (HAND_SKELETON_TAP, 170),
-                          (HAND_SKELETON_HALF_TAP, 90),
-                          (HAND_SKELETON_GLINT, 150)]
-SKELETON_MOTION_48 = [(make_hand_48(HAND_SKELETON), 1000),
-                      (make_hand_48(HAND_SKELETON_HALF_TAP), 90),
-                      (make_hand_48(HAND_SKELETON_TAP, True), 170),
-                      (make_hand_48(HAND_SKELETON_HALF_TAP), 90),
-                      (make_hand_48(HAND_SKELETON, True), 150)]
 
 HAND_LICH_HALF_TAP = bend_finger(HAND_LICH, 1)
 HAND_LICH_TAP = bend_finger(HAND_LICH_GLINT, 2)
@@ -759,14 +727,6 @@ LICH_MOTION_48 = [(make_hand_48(HAND_LICH), 1000),
                   (make_hand_48(HAND_LICH, True), 150)]
 
 # Hover: rapid eager tapping with the charged fingertip.
-SKELETON_POINT_MOTION = [(HAND_SKELETON_POINT_A, 260),
-                         (bend_finger(HAND_SKELETON_POINT_A, 1), 130),
-                         (HAND_SKELETON_GLINT, 260),
-                         (bend_finger(HAND_SKELETON_POINT_A, 1), 130)]
-SKELETON_POINT_MOTION_48 = [(make_hand_48(HAND_SKELETON_POINT_A), 260),
-                            (make_hand_48(bend_finger(HAND_SKELETON_POINT_A, 1)), 130),
-                            (make_hand_48(HAND_SKELETON, True), 260),
-                            (make_hand_48(bend_finger(HAND_SKELETON_POINT_A, 1)), 130)]
 LICH_POINT_MOTION = [(HAND_LICH_POINT_A, 260),
                      (bend_finger(HAND_LICH_POINT_A, 1), 130),
                      (HAND_LICH_GLINT, 260),
@@ -788,14 +748,10 @@ def static(grid, xhot, yhot):
     return {"frames": [(grid, 0)], "hotspot": (xhot, yhot)}
 
 
-# shape -> {style: spec}; shapes without a "skeleton" entry share the classic
+# shape -> {style: spec}; shapes without a per-style entry share the classic
 # grid, which the skeleton palette renders in bone tones.
 SHAPES = {
     "default": {"classic": static(ARROW, 1, 1),
-                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0),
-                             "motion": SKELETON_MOTION_FRAMES,
-                             "hires": dict(SKELETON_HIRES,
-                                           motion=SKELETON_MOTION_48)},
                 "lich": {"frames": LICH_HAND_FRAMES, "hotspot": (9, 0),
                          "motion": LICH_MOTION_FRAMES,
                          "hires": dict(LICH_HIRES, motion=LICH_MOTION_48)},
@@ -804,10 +760,6 @@ SHAPES = {
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4),
                          "motion": WAND_MOTION_FRAMES}},
     "pointer": {"classic": static(HAND_CLASSIC, 8, 0),
-                "skeleton": {"frames": SKELETON_POINT_FRAMES, "hotspot": (9, 0),
-                             "motion": SKELETON_POINT_MOTION,
-                             "hires": dict(SKELETON_POINT_HIRES,
-                                           motion=SKELETON_POINT_MOTION_48)},
                 "lich": {"frames": LICH_POINT_FRAMES, "hotspot": (9, 0),
                          "motion": LICH_POINT_MOTION,
                          "hires": dict(LICH_POINT_HIRES,
