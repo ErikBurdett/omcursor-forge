@@ -366,6 +366,22 @@ Panel {
             checked: root.service ? root.service.animated === true : true
             onToggled: if (root.service) root.service.setAnimated(!root.service.animated)
           }
+
+          Item { width: Style.space(10); height: 1 }
+
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Click ripple"
+            color: root.barForeground
+            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+            font.pixelSize: Style.font.bodySmall
+          }
+
+          ToggleSwitch {
+            anchors.verticalCenter: parent.verticalCenter
+            checked: root.service ? root.service.clickRipple === true : true
+            onToggled: if (root.service) root.service.setClickRipple(!root.service.clickRipple)
+          }
         }
 
         PanelSectionHeader { text: "Every shape" }

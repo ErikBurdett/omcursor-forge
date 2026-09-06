@@ -444,9 +444,18 @@ MINI_HOURGLASS_DRAINED = [
     "########",
 ]
 
-# The skeleton hand's accent ring glints briefly on a slow loop.
+# The skeleton hand's accent ring double-blinks on a slow loop.
 HAND_SKELETON_GLINT = [row.replace("#RR#", "#WR#") for row in HAND_SKELETON]
-SKELETON_HAND_FRAMES = [(HAND_SKELETON, 1100), (HAND_SKELETON_GLINT, 140)]
+SKELETON_HAND_FRAMES = [(HAND_SKELETON, 1200), (HAND_SKELETON_GLINT, 140),
+                        (HAND_SKELETON, 140), (HAND_SKELETON_GLINT, 140)]
+
+# Hover ("pointer") state: the hand charges up — fingertip spark and lit
+# ring pulsing quickly, so interactive elements visibly wake the cursor.
+HAND_SKELETON_POINT_A = [row.replace("#LB#", "#WB#") if at == 1 else row
+                         for at, row in enumerate(HAND_SKELETON_GLINT)]
+HAND_SKELETON_POINT_B = HAND_SKELETON_GLINT
+SKELETON_POINT_FRAMES = [(HAND_SKELETON_POINT_A, 300),
+                         (HAND_SKELETON_POINT_B, 300)]
 
 # The lich variant: the same hand emerging from a wizard-robe sleeve that
 # droops off the wrist in tattered points. Cloth roles: C dark, c fold.
@@ -463,7 +472,11 @@ HAND_LICH = HAND_SKELETON[:14] + [
     "...#....................",
 ]
 HAND_LICH_GLINT = [row.replace("#RR#", "#WR#") for row in HAND_LICH]
-LICH_HAND_FRAMES = [(HAND_LICH, 1100), (HAND_LICH_GLINT, 140)]
+LICH_HAND_FRAMES = [(HAND_LICH, 1200), (HAND_LICH_GLINT, 140),
+                    (HAND_LICH, 140), (HAND_LICH_GLINT, 140)]
+HAND_LICH_POINT_A = [row.replace("#LB#", "#WB#") if at == 1 else row
+                     for at, row in enumerate(HAND_LICH_GLINT)]
+LICH_POINT_FRAMES = [(HAND_LICH_POINT_A, 300), (HAND_LICH_GLINT, 300)]
 
 HIRES = 48  # the 48px nominal gets native art instead of a 2x upscale
 
@@ -535,14 +548,24 @@ def make_hand_48(base, glint=False):
 
 HAND_SKELETON_48 = make_hand_48(HAND_SKELETON, False)
 HAND_SKELETON_48_GLINT = make_hand_48(HAND_SKELETON, True)
-SKELETON_HAND_48_FRAMES = [(HAND_SKELETON_48, 1100),
+SKELETON_HAND_48_FRAMES = [(HAND_SKELETON_48, 1200),
+                           (HAND_SKELETON_48_GLINT, 140),
+                           (HAND_SKELETON_48, 140),
                            (HAND_SKELETON_48_GLINT, 140)]
 SKELETON_HIRES = {"frames": SKELETON_HAND_48_FRAMES, "hotspot": (18, 0)}
 
 HAND_LICH_48 = make_hand_48(HAND_LICH, False)
 HAND_LICH_48_GLINT = make_hand_48(HAND_LICH, True)
-LICH_HAND_48_FRAMES = [(HAND_LICH_48, 1100), (HAND_LICH_48_GLINT, 140)]
+LICH_HAND_48_FRAMES = [(HAND_LICH_48, 1200), (HAND_LICH_48_GLINT, 140),
+                       (HAND_LICH_48, 140), (HAND_LICH_48_GLINT, 140)]
 LICH_HIRES = {"frames": LICH_HAND_48_FRAMES, "hotspot": (18, 0)}
+
+SKELETON_POINT_48_FRAMES = [(make_hand_48(HAND_SKELETON_POINT_A), 300),
+                            (make_hand_48(HAND_SKELETON_POINT_B), 300)]
+SKELETON_POINT_HIRES = {"frames": SKELETON_POINT_48_FRAMES, "hotspot": (18, 0)}
+LICH_POINT_48_FRAMES = [(make_hand_48(HAND_LICH_POINT_A), 300),
+                        (make_hand_48(HAND_LICH_GLINT), 300)]
+LICH_POINT_HIRES = {"frames": LICH_POINT_48_FRAMES, "hotspot": (18, 0)}
 
 # A blade pointing to the hotspot, guard and pommel in the accent color.
 SWORD = [
@@ -604,8 +627,9 @@ WAND_GLINT = [row.replace("#RWWWR#", "#WRRRW#").replace("#RWR#", "#WRW#")
               .replace("#R#", "#W#") for row in WAND]
 SWORD_GLINT = [row.replace("#HF#", "#WF#") if index in (2, 3, 4)
                else row for index, row in enumerate(SWORD)]
-SWORD_FRAMES = [(SWORD, 1400), (SWORD_GLINT, 120)]
-WAND_FRAMES = [(WAND, 900), (WAND_GLINT, 180)]
+SWORD_FRAMES = [(SWORD, 1400), (SWORD_GLINT, 140), (SWORD, 140),
+                (SWORD_GLINT, 140)]
+WAND_FRAMES = [(WAND, 650), (WAND_GLINT, 300)]
 
 
 def mirror_grid(grid):
@@ -688,10 +712,10 @@ SHAPES = {
                 "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
     "pointer": {"classic": static(HAND_CLASSIC, 8, 0),
-                "skeleton": {"frames": SKELETON_HAND_FRAMES, "hotspot": (9, 0),
-                             "hires": SKELETON_HIRES},
-                "lich": {"frames": LICH_HAND_FRAMES, "hotspot": (9, 0),
-                         "hires": LICH_HIRES},
+                "skeleton": {"frames": SKELETON_POINT_FRAMES, "hotspot": (9, 0),
+                             "hires": SKELETON_POINT_HIRES},
+                "lich": {"frames": LICH_POINT_FRAMES, "hotspot": (9, 0),
+                         "hires": LICH_POINT_HIRES},
                 "sword": {"frames": SWORD_FRAMES, "hotspot": (1, 1)},
                 "wand": {"frames": WAND_FRAMES, "hotspot": (4, 4)}},
     "text": {"classic": static(TEXT_BEAM, 8, 12)},
@@ -995,12 +1019,24 @@ def shape_images(shape, style, roles, left_handed, image_path, image_hotspot,
     return images
 
 
-def build_hyprcursor(theme_dir, shapes_images):
+def build_hyprcursor(theme_dir, shapes_images, animated=True):
     """Compile a native Hyprcursor theme into theme_dir, when possible.
 
-    Hyprland prefers Hyprcursor and falls back to the XCursor files
-    otherwise, so any failure here is a warning rather than an error.
+    Only for fully static themes: Hyprland's cursor manager animates the
+    XCursor lane solely when NO hyprcursor theme is loaded, and the
+    hyprcursor lane renders a single frame in practice — so shipping
+    hyprcursor files alongside an animated theme freezes every animation
+    (verified empirically on Hyprland 0.56). With animation on, we remove
+    the hyprcursor files and let the animated XCursor lane serve Hyprland.
     """
+    if animated:
+        manifest = Path(theme_dir) / "manifest.hl"
+        hyprcursors = Path(theme_dir) / "hyprcursors"
+        if manifest.exists():
+            manifest.unlink()
+        if hyprcursors.exists():
+            shutil.rmtree(hyprcursors)
+        return []
     util = shutil.which("hyprcursor-util")
     if not util:
         return []
@@ -1075,7 +1111,7 @@ def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
                   "Comment=Pixel-art cursor theme generated by Cursor Forge\n"
                   "Inherits=Adwaita\n").encode())
 
-    warnings = build_hyprcursor(theme_dir, shapes_images)
+    warnings = build_hyprcursor(theme_dir, shapes_images, animated)
 
     # Previews for the shell UI: both styles at the current color, the active
     # style as current.png (the bar widget's icon), and a one-row gallery of
@@ -1090,7 +1126,35 @@ def build_theme(out_dir, style, rgb, image_path=None, left_handed=False,
     current = shapes_images["default"][0][6]
     atomic_write(previews / "current.png", png_bytes(current, BASE, BASE))
     atomic_write(previews / "shapes.png", shape_gallery_png(shapes_images))
+    for index, frame in enumerate(ripple_frames(rgb)):
+        atomic_write(previews / f"ripple_{index}.png",
+                     png_bytes(frame, HIRES, HIRES))
     return theme_dir, warnings
+
+
+def ripple_frames(rgb, count=4):
+    """Expanding pixel-art diamond rings for the click-ripple overlay."""
+    accent = (*rgb, 255)
+    soft = (*darken(rgb, 0.35), 255)
+    core = (255, 255, 248, 255)
+    frames = []
+    center = (HIRES - 1) / 2
+    for index in range(count):
+        radius = 5 + index * 6
+        thickness = 2.4 - index * 0.45
+        frame = [(0, 0, 0, 0)] * (HIRES * HIRES)
+        for y in range(HIRES):
+            for x in range(HIRES):
+                distance = abs(x - center) + abs(y - center)
+                if abs(distance - radius) <= thickness:
+                    sparse = index >= 2 and (x + y) % 2 == 0
+                    if sparse:
+                        continue
+                    frame[y * HIRES + x] = soft if index >= 2 else accent
+        if index == 0:
+            frame[int(center) * HIRES + int(center)] = core
+        frames.append(frame)
+    return frames
 
 
 def shape_gallery_png(shapes_images, gap=2):
@@ -1180,7 +1244,8 @@ def load_settings():
 
 def save_settings(settings):
     allowed = ("style", "colorMode", "customColor", "size", "imagePath",
-               "imageHotspot", "leftHanded", "animated", "active", "restore")
+               "imageHotspot", "leftHanded", "animated", "clickRipple",
+               "active", "restore")
     clean = {key: settings[key] for key in allowed if key in settings}
     atomic_write(config_path(),
                  (json.dumps(clean, indent=2) + "\n").encode())
@@ -1219,6 +1284,7 @@ def cmd_apply(args):
             "imageHotspot": args.image_hotspot,
             "leftHanded": bool(args.left_handed),
             "animated": not args.no_animation,
+            "clickRipple": not args.no_click_ripple,
             "active": not args.no_apply,
         })
         save_settings(settings)
@@ -1291,6 +1357,8 @@ def main(argv=None):
                          help="mirror the hand and arrow shapes")
     apply_p.add_argument("--no-animation", action="store_true",
                          help="build every shape as a single static frame")
+    apply_p.add_argument("--no-click-ripple", action="store_true",
+                         help="persist the click ripple as disabled")
     apply_p.add_argument("--out", default="",
                          help="icons directory override (for tests)")
     apply_p.add_argument("--no-apply", action="store_true")

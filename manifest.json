@@ -2,18 +2,20 @@
   "schemaVersion": 1,
   "id": "io.github.erikburdett.cursorforge",
   "name": "Cursor Forge",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": "Erik Burdett",
   "license": "MIT",
   "description": "Forge retro pixel-art mouse cursors from the bar — theme-matched colors, a skeletal pointing hand, or your own image.",
   "kinds": [
     "service",
-    "bar-widget"
+    "bar-widget",
+    "overlay"
   ],
   "keepLoaded": true,
   "entryPoints": {
     "service": "Service.qml",
-    "barWidget": "BarWidget.qml"
+    "barWidget": "BarWidget.qml",
+    "overlay": "ClickOverlay.qml"
   },
   "barWidget": {
     "displayName": "Cursor Forge",

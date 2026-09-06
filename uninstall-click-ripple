@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Removes the Cursor Forge click-ripple mouse bind added by
+# install-click-ripple. Backs the bindings file up first.
+set -euo pipefail
+
+BINDINGS="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/bindings.lua"
+MARKER="cursorforge-click-ripple"
+
+[[ -f "$BINDINGS" ]] || { echo "error: $BINDINGS not found" >&2; exit 1; }
+
+if ! grep -q "$MARKER" "$BINDINGS"; then
+  echo "click ripple bind is not installed"
+  exit 0
+fi
+
+cp "$BINDINGS" "$BINDINGS.bak.$(date +%s)"
+sed -i "/-- BEGIN $MARKER/,/-- END $MARKER/d" "$BINDINGS"
+echo "removed — Hyprland reloads bindings.lua automatically."

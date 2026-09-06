@@ -26,6 +26,7 @@ Item {
   property int cursorSize: 24
   property bool leftHanded: false
   property bool animated: true
+  property bool clickRipple: true
   property bool active: false
 
   readonly property bool busy: generator.running
@@ -35,6 +36,7 @@ Item {
   property bool settingsLoaded: false
 
   signal applied()
+  signal ripple(real x, real y)
 
   readonly property string pluginSourceDir: {
     var source = manifest && manifest.__sourceDir ? String(manifest.__sourceDir) : ""
@@ -134,6 +136,20 @@ Item {
     return true
   }
 
+  function setClickRipple(enabled) {
+    clickRipple = enabled === true
+    requestApply()
+    return true
+  }
+
+  // Fired by the (optional) non-consuming mouse bind on every left click;
+  // resolves the pointer position and hands it to the ripple overlay.
+  function triggerRipple() {
+    if (!clickRipple) return "off"
+    if (!cursorPosQuery.running) cursorPosQuery.exec(["/usr/bin/hyprctl", "cursorpos"])
+    return "ok"
+  }
+
   function setImageHotspot(spot) {
     if (!/^\d{1,2},\d{1,2}$/.test(String(spot))) return false
     imageHotspot = String(spot)
@@ -166,6 +182,7 @@ Item {
       "--image-hotspot", imageHotspot)
     if (leftHanded) argv.push("--left-handed")
     if (!animated) argv.push("--no-animation")
+    if (!clickRipple) argv.push("--no-click-ripple")
     if (!fullApply) argv.push("--no-apply", "--no-save")
     generator.exec(argv)
   }
@@ -210,12 +227,13 @@ Item {
       ? Number(parsed.size) : cursorSize
     var nextLeftHanded = parsed.leftHanded === true
     var nextAnimated = parsed.animated !== false
+    var nextClickRipple = parsed.clickRipple !== false
     var nextActive = parsed.active === true
     var changed = nextStyle !== style || nextMode !== colorMode
       || nextColor !== customColor || nextImage !== imagePath
       || nextHotspot !== imageHotspot || nextSize !== cursorSize
       || nextLeftHanded !== leftHanded || nextAnimated !== animated
-      || nextActive !== active
+      || nextClickRipple !== clickRipple || nextActive !== active
 
     style = nextStyle
     colorMode = nextMode
@@ -225,6 +243,7 @@ Item {
     cursorSize = nextSize
     leftHanded = nextLeftHanded
     animated = nextAnimated
+    clickRipple = nextClickRipple
     active = nextActive
 
     if (firstLoad) {
@@ -254,6 +273,19 @@ Item {
     onLoaded: root.adoptSettings(text())
     onFileChanged: reload()
     onLoadFailed: root.adoptSettings("")
+  }
+
+  Process {
+    id: cursorPosQuery
+    stdout: StdioCollector { id: cursorPosOut }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) return
+      var parts = String(cursorPosOut.text).trim().split(",")
+      if (parts.length < 2) return
+      var x = Number(parts[0])
+      var y = Number(parts[1])
+      if (isFinite(x) && isFinite(y)) root.ripple(x, y)
+    }
   }
 
   Process {
@@ -287,6 +319,7 @@ Item {
         size: root.cursorSize,
         leftHanded: root.leftHanded,
         animated: root.animated,
+        clickRipple: root.clickRipple,
         active: root.active,
         busy: root.busy,
         lastError: root.lastError,
@@ -323,6 +356,13 @@ Item {
     function toggleAnimation(): string {
       root.setAnimated(!root.animated)
       return root.animated ? "animated" : "static"
+    }
+
+    function click(): string { return root.triggerRipple() }
+
+    function toggleClickRipple(): string {
+      root.setClickRipple(!root.clickRipple)
+      return root.clickRipple ? "on" : "off"
     }
   }
 }

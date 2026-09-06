@@ -98,7 +98,16 @@ def test_animation_flag_flattens_to_one_frame():
     frames, _, _ = cursorgen.shape_spec("wait", "classic", False, animated=False)
     assert frames == [(cursorgen.HOURGLASS_FULL, 0)]
     glint, _, _ = cursorgen.shape_spec("default", "skeleton", False)
-    assert len(glint) == 2
+    assert len(glint) == 4
+
+
+def test_pointer_is_distinct_from_default_for_hand_styles():
+    for grid_style in ("skeleton", "lich"):
+        default, _, _ = cursorgen.shape_spec("default", grid_style, False)
+        pointer, _, _ = cursorgen.shape_spec("pointer", grid_style, False)
+        assert default != pointer, grid_style
+        # hover state pulses fast: every frame carries a short delay
+        assert all(delay <= 400 for _, delay in pointer)
 
 
 def test_hand_48_grids_are_well_formed():
@@ -230,27 +239,32 @@ def test_transparent_pixels_are_fully_zero(tmp_path):
 def test_previews_are_valid_pngs(tmp_path):
     theme = build(tmp_path, "classic")
     for name in ("current.png", "classic.png", "skeleton.png", "lich.png",
-                 "sword.png", "wand.png", "shapes.png"):
+                 "sword.png", "wand.png", "shapes.png", "ripple_0.png",
+                 "ripple_3.png"):
         data = (theme / "previews" / name).read_bytes()
         assert data[:8] == b"\x89PNG\r\n\x1a\n", name
         width, height = struct.unpack_from(">II", data, 16)
         if name == "shapes.png":
             assert width > height
+        elif name.startswith("ripple_"):
+            assert width == height == cursorgen.HIRES
         else:
             assert width == height == cursorgen.BASE
 
 
-def test_hyprcursor_meta_generation(tmp_path, monkeypatch):
-    """The hyprcursor working set is exercised end to end when the utility
-    exists on the machine running the tests; otherwise the build must simply
-    skip it without failing."""
-    theme = build(tmp_path, "skeleton")
+def test_hyprcursor_only_ships_for_static_themes(tmp_path):
+    """Hyprland only animates the XCursor lane when no hyprcursor theme is
+    loaded, so an animated build must never ship hyprcursor files — and must
+    scrub stale ones left by an earlier static build."""
     import shutil as shutil_module
-    if shutil_module.which("hyprcursor-util"):
-        assert (theme / "manifest.hl").is_file()
-        assert (theme / "hyprcursors").is_dir()
-    else:
-        assert not (theme / "manifest.hl").exists()
+    static_theme = build(tmp_path, "skeleton", extra=("--no-animation",))
+    has_util = shutil_module.which("hyprcursor-util") is not None
+    assert (static_theme / "manifest.hl").is_file() == has_util
+
+    animated_theme = build(tmp_path, "skeleton")
+    assert animated_theme == static_theme
+    assert not (animated_theme / "manifest.hl").exists()
+    assert not (animated_theme / "hyprcursors").exists()
 
 
 def test_no_save_leaves_config_untouched(tmp_path, monkeypatch):

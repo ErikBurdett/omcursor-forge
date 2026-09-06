@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Installs the optional Cursor Forge click-ripple mouse bind.
+#
+# Appends one NON-CONSUMING left-click bind to your Hyprland bindings.lua —
+# it observes clicks without intercepting them and asks the shell to draw a
+# brief ripple at the pointer. Your bindings file is backed up first.
+# Remove it any time with ./uninstall-click-ripple.
+set -euo pipefail
+
+BINDINGS="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/bindings.lua"
+MARKER="cursorforge-click-ripple"
+
+[[ -f "$BINDINGS" ]] || { echo "error: $BINDINGS not found" >&2; exit 1; }
+
+if grep -q "$MARKER" "$BINDINGS"; then
+  echo "click ripple bind is already installed"
+  exit 0
+fi
+
+if grep -Eq '^\s*(o|hl)\.bind\(\s*"mouse:272"' "$BINDINGS"; then
+  echo "error: an unmodified mouse:272 bind already exists in $BINDINGS;" >&2
+  echo "       refusing to add another. Remove or adapt it first." >&2
+  exit 1
+fi
+
+cp "$BINDINGS" "$BINDINGS.bak.$(date +%s)"
+
+cat >> "$BINDINGS" <<'EOF'
+
+-- BEGIN cursorforge-click-ripple (remove with uninstall-click-ripple)
+o.bind("mouse:272", "Cursor Forge click ripple",
+  "omarchy-shell io.github.erikburdett.cursorforge click",
+  { non_consuming = true, transparent = true })
+-- END cursorforge-click-ripple
+EOF
+
+echo "installed — Hyprland reloads bindings.lua automatically."
+echo "Toggle at runtime: omarchy-shell io.github.erikburdett.cursorforge toggleClickRipple"

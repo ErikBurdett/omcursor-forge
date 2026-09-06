@@ -4,6 +4,32 @@ All notable changes to Cursor Forge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-09-06
+
+### Fixed
+
+- **Animations now actually play on Hyprland.** Root cause found in
+  Hyprland's cursor manager: it animates the XCursor lane only when no
+  hyprcursor theme is loaded, and the hyprcursor lane renders a single
+  frame — so our own Hyprcursor output was freezing every animation.
+  Animated builds no longer ship hyprcursor files (and scrub stale ones);
+  fully static builds still get them. Note: Wayland apps using the
+  cursor-shape protocol and Hyprland-owned surfaces animate; XWayland apps
+  and games that draw their own cursors cannot, by design of the protocol.
+
+### Added
+
+- **Click ripple**: an accent-colored pixel-art ring bursts at the pointer
+  on every left click, via a new click-through overlay plus an optional
+  NON-CONSUMING Hyprland mouse bind (run `./install-click-ripple`; remove
+  with `./uninstall-click-ripple`; toggle in the panel or with
+  `toggleClickRipple`). The bind observes clicks without intercepting them.
+- **Hover state for the hand styles**: on links and buttons the skeleton
+  and lich hands charge up — fingertip spark and lit ring pulsing at
+  600 ms — so the cursor visibly reacts to interactive elements.
+- Stronger idle animations: ring and sword glints are now double-blinks,
+  and the wand star pulses on a faster cycle.
+
 ## [1.4.0] - 2026-09-06
 
 ### Added
