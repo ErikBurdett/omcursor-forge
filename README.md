@@ -163,6 +163,12 @@ python3 cursorgen.py preview --style lich --color '#6b8a69' \
 omarchy plugin validate .
 ```
 
+## Contributors
+
+- [@Diglapilesar](https://github.com/Diglapilesar) — identified the custom/cloned
+  bar service lookup and click-overlay initialization bugs, proposed fixes,
+  and verified them locally ([#3](https://github.com/ErikBurdett/omcursor-forge/issues/3)).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

@@ -14,7 +14,8 @@ Item {
   property var shell: null
   property var manifest: null
   readonly property string pluginId: "io.github.erikburdett.cursorforge"
-  readonly property var service: shell ? shell.serviceFor(pluginId) : null
+  // The shell assigns the matching service after loading this overlay.
+  property var service: shell ? shell.serviceFor(pluginId) : null
   readonly property string previewDir: service ? service.previewDir : ""
 
   readonly property int frameCount: 4

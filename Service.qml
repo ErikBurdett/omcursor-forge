@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Commons
+import "bridge" as Bridge
 
 // OmCursor Forge service. Owns the cursor settings, watches the settings file
 // and the Omarchy theme, and drives cursorgen.py to build + apply the theme.
@@ -375,7 +376,16 @@ Item {
   function removeRippleBind() { return runHelper("uninstall-click-ripple") }
   function fixFractionalScale() { return runHelper("fix-fractional-cursor") }
 
-  Component.onCompleted: checkBindInstalled()
+  Component.onCompleted: {
+    Bridge.ServiceBridge.service = root
+    checkBindInstalled()
+  }
+
+  Component.onDestruction: {
+    // A retiring instance must not clear a newer service during reload.
+    if (Bridge.ServiceBridge.service === root)
+      Bridge.ServiceBridge.service = null
+  }
 
   Process {
     id: bindCheck

@@ -4,6 +4,18 @@ All notable changes to OmCursor Forge (formerly Cursor Forge) are documented her
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Cursor Forge's widget and picker now share the running service on custom
+  and cloned bars, including when the service loads after the widget or is
+  recreated. The bridge exposes only Cursor Forge's own service.
+- The click-ripple overlay accepts the shell's service injection without a
+  read-only property TypeError.
+- Thanks to [@Diglapilesar](https://github.com/Diglapilesar) for reporting
+  both problems and proposing fixes in [#3](https://github.com/ErikBurdett/omcursor-forge/issues/3).
+
 ## [2.4.0] - 2026-09-06
 
 ### Removed
