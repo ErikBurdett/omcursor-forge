@@ -12,6 +12,14 @@ python3 -m venv .venv && .venv/bin/pip install pytest
 .venv/bin/pytest -q tests/
 ```
 
+The service/widget lifecycle regressions also use Qt 6's `qmltestrunner`
+and the QtTest QML module (included with Qt declarative tools on Omarchy).
+On Ubuntu, install `qt6-declarative-dev-tools`, `qml6-module-qttest`,
+`qml6-module-qtquick`, `qml6-module-qtquick-window`, `qml6-module-qtqml`, and
+`qml6-module-qtqml-workerscript`. These tests run offscreen with inert host
+adapters; they do not launch Quickshell or change your cursor. They skip
+locally if the runner is missing, and are required in CI.
+
 To run your working copy inside the Omarchy shell, clone it into the plugins
 directory and restart the shell:
 

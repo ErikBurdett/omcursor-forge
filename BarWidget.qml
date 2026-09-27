@@ -2,13 +2,17 @@ import QtQuick
 import Quickshell
 import qs.Commons
 import qs.Ui
+import "bridge" as Bridge
 
 BarWidget {
   id: root
   moduleName: "io.github.erikburdett.cursorforge"
 
-  readonly property var cursorService: bar && bar.shell
-    ? bar.shell.serviceFor(moduleName) : null
+  readonly property var cursorService: {
+    var hostedService = root.bar && root.bar.shell
+      ? root.bar.shell.serviceFor(root.moduleName) : null
+    return hostedService || Bridge.ServiceBridge.service
+  }
   readonly property bool showStyleName: setting("showStyleName", false) === true
   readonly property bool opened: panelLoader.item
     ? panelLoader.item.opened === true : false
